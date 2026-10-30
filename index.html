@@ -560,7 +560,11 @@ function cfaStats() {
 }
 
 /* ---------- shopping ---------- */
-const STORES = ['H Mart', 'Tesco', "Sainsbury's", 'Waitrose', 'Lidl', '온라인'];
+const STORES = ['Waitrose', 'H Mart', 'Tesco', "Sainsbury's", 'Lidl', '온라인'];
+// Commute shopping is Waitrose (better for Western ingredients); Korean/Asian staples go to H Mart.
+const HMART_WORDS = ['김치', '소면', '쌀', '고추장', '된장', '간장', '참기름', '들기름', '라면', '떡', '김', '만두', '두부', '어묵', '고춧가루',
+  '미역', '다시마', '멸치', '칼국수', '당면', '쌈장', '깻잎', '부침가루', '튀김가루', '새우', '오징어', '숙주', '청경채', '팽이', '배추', '무', '대파'];
+const guessStore = title => HMART_WORDS.some(w => title.includes(w)) ? 'H Mart' : 'Waitrose';
 function shoppingCard() {
   const items = state.shopping, open = items.filter(x => !x.done), done = items.length - open.length;
   const stores = [...new Set(items.map(x => x.store || '기타'))];
@@ -574,7 +578,7 @@ function shoppingCard() {
       : '<div class="empty">비어 있음</div>'}
     <form class="row" data-form="shop" style="margin-top:8px">
       <input class="grow" name="title" placeholder="살 것 (쉼표로 여러 개)" required>
-      <input name="store" list="storeList" placeholder="가게" style="width:100px" value="${esc(stores[0] || 'H Mart')}">
+      <input name="store" list="storeList" placeholder="가게 (비우면 자동)" style="width:120px">
       <datalist id="storeList">${STORES.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
       <button class="btn primary">추가</button>
     </form>
@@ -1271,7 +1275,7 @@ document.addEventListener('submit', e => {
     case 'ledger': state.amazon.ledger.push({ id: uid(), date: v.date, type: v.type, amount: Number(v.amount), memo: v.memo.trim() }); break;
     case 'event': state.kids.events.push({ id: uid(), date: v.date, time: v.time, title: v.title.trim() }); break;
     case 'shop':
-      for (const t of v.title.split(',').map(x => x.trim()).filter(Boolean)) state.shopping.push({ id: uid(), title: t, store: v.store.trim() || '기타', done: false });
+      for (const t of v.title.split(',').map(x => x.trim()).filter(Boolean)) state.shopping.push({ id: uid(), title: t, store: v.store.trim() || guessStore(t), done: false });
       break;
     case 'school': state.kids.schools.push({ id: uid(), name: v.name.trim(), kind: '', entry: '', how: '', action: '조사', url: '', status: '조사' }); break;
     case 'win': state.career.wins.push({ id: uid(), date: v.date, text: v.text.trim() }); break;
