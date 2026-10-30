@@ -156,12 +156,14 @@ const OLD_TENANT_STEPS = [
 ];
 const TENANT_STEPS = [
   'HMO 해당 여부 + 카운슬 라이선스 확인 (3명 이상·2가구 이상이면 HMO)',
+  '플랫 리스(관리규약)가 세입자 3명을 허용하는지 확인',
   '모기지·보험사에 세입자 추가 알리기',
   '안전 서류: Gas Safety · EICR · EPC · 화재경보기/CO 경보기',
   '방 상태 점검·청소·수리',
   '시세 조사 후 월세 결정 (SpareRoom 등)',
   '기존 테넌트 2명에게 미리 공지',
   '공용공간·빌·카운슬 택스 분담 규칙 정리',
+  '청소업체 견적 2~3곳 → 월세 포함 여부 결정',
   '리스팅 작성 + 사진 올리기',
   '문의 응대 / 뷰잉',
   'Right to Rent 확인 + 레퍼런스·신용 체크',
@@ -274,6 +276,10 @@ const INVEST_ASSETS = [
   ['나스닥 100', 'QQQ', 45, 'qqq'], ['코스피', 'KOSPI', 35, 'kospi'], ['금', 'Gold', 10, 'gold'], ['AI 전력 인프라', 'GRID', 10, 'grid'],
 ];
 const ISA_ALLOWANCE = 20000;
+// What a careful let looks like: every candidate goes through all of these before an offer.
+const SCREEN_CHECKS = ['신분 · Right to Rent', '직장 · 소득', '이전 집주인 레퍼런스', '신용 체크', '대면 뷰잉 + 기존 테넌트 인사', '생활 패턴 (근무 · 흡연 · 손님)', '하우스 룰 동의'];
+const TENANT_CRITERIA = ['직장인 (소득 증빙 가능)', '비흡연', '조용한 생활 — 아이 있는 집 OK', '최소 6개월 계약', '손님 숙박은 미리 말하기', '공용공간 쓰고 바로 정리'];
+const CLEAN_FREQ = { '매주': 4.33, '격주': 2.17, '월 1회': 1 };
 const PRODUCT_STAGES = ['아이디어', '리서치', '샘플', '발주', '입고중', '판매중', '보류'];
 const CANDIDATE_STAGES = ['문의', '쇼잉 예정', '쇼잉 완료', '심사중', '승인', '계약 완료', '탈락'];
 
@@ -335,7 +341,10 @@ function defaultState() {
         { id: uid(), name: '테넌트 1', room: '', rent: 780, dueDay: 1, leaseEnd: '', paid: {} },
         { id: uid(), name: '테넌트 2', room: '', rent: 700, dueDay: 27, leaseEnd: '', paid: {} },
       ],
-      targetRent: 0,
+      targetRent: 800,
+      vacantSince: '',
+      criteria: [...TENANT_CRITERIA],
+      cleaning: { freq: '격주', hours: 3, rate: 25, company: '', inRent: true },
       steps: steps(TENANT_STEPS),
       candidates: [],
     },
@@ -532,6 +541,14 @@ function rentAlertItem({ t, due }) {
     <span class="t">${esc(t.name || '테넌트')} 월세 ${money(t.rent)} 입금 확인</span>
     <span class="tag${due < now ? ' late' : ''}">${label}</span></li>`;
 }
+function vacancy() {
+  const v = state.house.vacantSince;
+  if (!v) return null;
+  const [y, mo] = v.split('-').map(Number), n = new Date();
+  const months = Math.max(0, (n.getFullYear() - y) * 12 + n.getMonth() + 1 - mo);
+  return { months, lost: months * (Number(state.house.targetRent) || 0) };
+}
+const cleaningMonthly = () => { const c = state.house.cleaning; return (Number(c.hours) || 0) * (Number(c.rate) || 0) * (CLEAN_FREQ[c.freq] || 0); };
 function houseStats() {
   const m = thisMonth();
   const t = state.house.tenants;
@@ -821,8 +838,9 @@ const VIEWS = {
           ? card('kids', `${esc(nextAnnual.ev.title)} ${dday(daysUntil(nextAnnual.date))}`, `${esc(state.kids.child.name)} ${childAge()}`)
           : card('kids', ev ? esc(ev.title) : '일정 없음', ev ? `${ev.date === now ? '오늘' : shortDate(ev.date)} ${esc(ev.time || '')}` : '다가오는 일정 추가')}
         ${card('fitness', `이번 주 ${fs.week}/${fs.goal}`, state.fitness.log[now] ? '오늘 완료 ✓' : `최소: ${esc(state.fitness.minimum)}`)}
-        ${card('house', `월세 ${hs.paid}/${hs.count} 입금`, hs.nextDue
-          ? `다음: ${esc(hs.nextDue.t.name)} ${shortDate(hs.nextDue.due)} ${money(hs.nextDue.t.rent)}`
+        ${card('house', `월세 ${hs.paid}/${hs.count} 입금`, vacancy()
+          ? `빈 방 ${vacancy().months}개월 · ${money(vacancy().lost)} 놓침`
+          : hs.nextDue ? `다음: ${esc(hs.nextDue.t.name)} ${shortDate(hs.nextDue.due)} ${money(hs.nextDue.t.rent)}`
           : `3번째 테넌트 준비 ${hs.stepsDone}/${hs.stepsTotal}`)}
         ${card('invest', state.invest.done[thisMonth()] ? '이번 달 매수 ✓' : `ISA 매수 ${dday(daysUntil(lastDayOfMonth()))}`,
           investSync ? `리스크 경고 ${investSync.risk.filter(x => x.state === '경고').length}개 · 주의 ${investSync.risk.filter(x => x.state === '주의').length}개` : `올해 ISA £${isaThisYear().toLocaleString('en-GB')}`)}
@@ -1101,8 +1119,21 @@ const VIEWS = {
 
   house() {
     const hs = houseStats(), m = thisMonth(), T = 'house.tenants', C = 'house.candidates';
-    const target = Number(state.house.targetRent) || 0;
-    return `<div class="grid">
+    const target = Number(state.house.targetRent) || 0, H = state.house;
+    const vac = vacancy(), nextStep = H.steps.find(x => !x.done);
+    const cl = H.cleaning, clMonth = cleaningMonthly();
+    return `<div class="card" style="border-left:4px solid var(--danger);margin-bottom:12px">
+        <div class="row" style="justify-content:space-between"><h3 style="margin:0">🚪 빈 방 채우기 — 급함</h3>
+          <span class="small muted">후보 ${H.candidates.length}명${H.candidates.length ? ` · 심사 완료 ${H.candidates.filter(c => SCREEN_CHECKS.every((_, i) => c.checks?.[i])).length}명` : ''}</span></div>
+        <div class="row small" style="margin-top:8px">
+          <label class="row" style="gap:4px">비어 있던 달 <input type="month" data-setting="house.vacantSince" value="${esc(H.vacantSince)}"></label>
+          <label class="row" style="gap:4px">목표 월세 £<input type="number" data-setting="house.targetRent" value="${esc(H.targetRent)}"></label>
+        </div>
+        ${vac ? `<div class="stat" style="margin-top:8px"><span>지금까지 놓친 월세 (${vac.months}개월)</span><b class="neg" style="font-size:18px">${money(vac.lost)}</b></div>`
+          : '<div class="hint">언제부터 비었는지 넣으면 놓친 월세를 계산해요.</div>'}
+        <div class="small muted">Surbiton 일반 더블룸 시세 약 £800~850 (SpareRoom 매물 기준, 빌 별도) · 다음 단계: <b>${esc(nextStep?.title || '모두 완료')}</b></div>
+      </div>
+      <div class="grid">
       <div class="stack">
         <div class="card"><h3>테넌트 · ${m} 월세</h3>
           <div class="scroll-x"><table class="table">
@@ -1122,25 +1153,45 @@ const VIEWS = {
           <button class="btn" data-action="add-tenant" style="margin-top:8px">+ 테넌트</button>
           <div class="stat" style="margin-top:8px"><span>월세 합계 (현재)</span><b>${money(hs.rentTotal)}</b></div>
           <div class="stat"><span>입금 완료</span><b>${hs.paid} / ${hs.count}</b></div>
-          <div class="stat"><span>3번째 테넌트 목표 월세 (${CURRENCY})</span><input type="number" data-setting="house.targetRent" value="${esc(state.house.targetRent)}"></div>
           ${target ? `<div class="stat muted small"><span>3명 기준 예상 월 수입</span><b>${money(hs.rentTotal + target)}</b></div>` : ''}
         </div>
-        <div class="card"><h3>3번째 테넌트 후보</h3>
-          <div class="scroll-x"><table class="table">
-            <tr><th>이름</th><th>연락처</th><th>단계</th><th>메모</th><th></th></tr>
-            ${state.house.candidates.map(c => `<tr>
-              <td style="min-width:90px">${editInput(C, c, 'name')}</td>
-              <td style="min-width:110px">${editInput(C, c, 'contact')}</td>
-              <td style="min-width:100px"><select data-path="${C}" data-id="${c.id}" data-field="stage">${options(CANDIDATE_STAGES, c.stage)}</select></td>
-              <td style="min-width:120px">${editInput(C, c, 'memo')}</td>
-              <td><button class="icon" data-action="del-item" data-path="${C}" data-id="${c.id}">✕</button></td></tr>`).join('')}
-          </table></div>
-          ${state.house.candidates.length ? '' : '<div class="empty">문의 오면 여기에 추가</div>'}
+        <div class="card"><h3>3번째 테넌트 후보 <span class="small muted">7개 심사를 다 통과해야 오퍼</span></h3>
+          <ul class="list">${H.candidates.map(c => {
+            const n = SCREEN_CHECKS.filter((_, i) => c.checks?.[i]).length;
+            return `<li style="flex-wrap:wrap">
+              <div class="row" style="width:100%">
+                <span class="grow">${editInput(C, c, 'name', 'text', 'placeholder="이름" style="width:100%"')}</span>
+                <select data-path="${C}" data-id="${c.id}" data-field="stage" style="width:auto">${options(CANDIDATE_STAGES, c.stage)}</select>
+                <span class="tag${n === SCREEN_CHECKS.length ? '' : ' late'}">${n}/${SCREEN_CHECKS.length}</span>
+                <button class="icon" data-action="del-item" data-path="${C}" data-id="${c.id}">✕</button>
+              </div>
+              <div class="row" style="width:100%">${editInput(C, c, 'contact', 'text', 'placeholder="연락처" style="flex:1"')}${editInput(C, c, 'memo', 'text', 'placeholder="메모 (직업, 인상…)" style="flex:2"')}</div>
+              <div class="row small" style="width:100%;gap:4px 10px">${SCREEN_CHECKS.map((label, i) => `<label class="row" style="gap:3px"><input type="checkbox" data-action="screen" data-id="${c.id}" data-i="${i}" ${c.checks?.[i] ? 'checked' : ''}>${esc(label)}</label>`).join('')}</div>
+            </li>`;
+          }).join('')}</ul>
+          ${H.candidates.length ? '' : '<div class="empty">문의 오면 여기에 추가</div>'}
           <button class="btn" data-action="add-candidate" style="margin-top:8px">+ 후보</button>
         </div>
       </div>
       <div class="stack">
         ${checklist('house.steps', 'house', '3번째 테넌트 준비')}
+        <div class="card"><h3>원하는 테넌트 · 하우스 룰</h3>
+          <div class="small muted">리스팅에 그대로 쓰고, 뷰잉 때 하나씩 물어보세요.</div>
+          <ul class="list">${H.criteria.map((t, i) => `<li><span class="t">${esc(t)}</span><button class="icon" data-action="del-criteria" data-i="${i}">✕</button></li>`).join('')}</ul>
+          <form class="row" data-form="criteria" style="margin-top:8px"><input class="grow" name="title" placeholder="조건 추가" required><button class="btn">추가</button></form>
+        </div>
+        <div class="card"><h3>🧹 청소업체</h3>
+          <div class="row small">
+            <select data-setting="house.cleaning.freq" style="width:auto">${options(Object.keys(CLEAN_FREQ), cl.freq)}</select>
+            <label class="row" style="gap:3px">회당 <input type="number" min="0" step="0.5" style="width:56px" data-setting="house.cleaning.hours" value="${esc(cl.hours)}">시간</label>
+            <label class="row" style="gap:3px">시급 £<input type="number" min="0" style="width:56px" data-setting="house.cleaning.rate" value="${esc(cl.rate)}"></label>
+          </div>
+          <div class="stat" style="margin-top:8px"><span>월 비용</span><b>${money(Math.round(clMonth))}</b></div>
+          <div class="stat"><span>테넌트 3명 기준 1인당</span><b>${money(Math.round(clMonth / 3))}</b></div>
+          <label class="row small" style="margin-top:4px"><input type="checkbox" data-action="clean-inrent" ${cl.inRent ? 'checked' : ''}> 월세에 포함 ("cleaner included"로 광고)</label>
+          <label class="small" style="display:block;margin-top:6px">업체 / 메모<input style="width:100%;margin-top:4px" data-setting="house.cleaning.company" value="${esc(cl.company)}" placeholder="견적 받은 곳, 범위 (주방 · 욕실 · 복도)"></label>
+          <div class="hint">London 시세 시간당 약 £20~30. 공용공간(주방·욕실·복도)만 맡기면 3명이 써도 집이 유지되고, 리스팅에서 "cleaner included"는 좋은 세입자를 끄는 장점이 돼요.</div>
+        </div>
         ${taskPanel('house', '수리 / 관리 할 일')}
         ${notesPanel('house', '하우스 룰, 유틸리티 계정, 수리 업체 연락처…')}
       </div>
@@ -1248,7 +1299,10 @@ document.addEventListener('click', e => {
     case 'workout': { const d = el.dataset.date; state.fitness.log[d] = !state.fitness.log[d]; if (!state.fitness.log[d]) delete state.fitness.log[d]; break; }
     case 'add-product': state.amazon.products.push({ id: uid(), name: '', stage: PRODUCT_STAGES[0], cost: '', fee: '', price: '' }); break;
     case 'add-tenant': state.house.tenants.push({ id: uid(), name: '', room: '', rent: 0, dueDay: 1, leaseEnd: '', paid: {} }); break;
-    case 'add-candidate': state.house.candidates.push({ id: uid(), name: '', contact: '', stage: CANDIDATE_STAGES[0], memo: '' }); break;
+    case 'add-candidate': state.house.candidates.push({ id: uid(), name: '', contact: '', stage: CANDIDATE_STAGES[0], memo: '', checks: {} }); break;
+    case 'screen': { const c = findIn('house.candidates', id), i = el.dataset.i; c.checks = c.checks || {}; c.checks[i] = !c.checks[i]; break; }
+    case 'del-criteria': state.house.criteria.splice(Number(el.dataset.i), 1); break;
+    case 'clean-inrent': state.house.cleaning.inRent = !state.house.cleaning.inRent; break;
     case 'toggle-rent': { const t = findIn('house.tenants', id), m = thisMonth(); t.paid = t.paid || {}; t.paid[m] = !t.paid[m]; break; }
     case 'prep-event': { const k = el.dataset.key; state.kids.prepared[k] = !state.kids.prepared[k]; break; }
     case 'export': return exportData();
@@ -1274,6 +1328,7 @@ document.addEventListener('submit', e => {
     case 'goal': state.career.goals.push({ id: uid(), title: v.title.trim(), progress: 0 }); break;
     case 'ledger': state.amazon.ledger.push({ id: uid(), date: v.date, type: v.type, amount: Number(v.amount), memo: v.memo.trim() }); break;
     case 'event': state.kids.events.push({ id: uid(), date: v.date, time: v.time, title: v.title.trim() }); break;
+    case 'criteria': state.house.criteria.push(v.title.trim()); break;
     case 'shop':
       for (const t of v.title.split(',').map(x => x.trim()).filter(Boolean)) state.shopping.push({ id: uid(), title: t, store: v.store.trim() || guessStore(t), done: false });
       break;
