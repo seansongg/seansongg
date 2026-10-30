@@ -235,40 +235,34 @@ const ANNUAL_EVENTS = [
 ];
 // Education & development timeline for a child born 2024-10-17 (Reception entry Sept 2029).
 // Education & development plan for Minwoo (born 2024-10-17; Reception entry Sept 2029,
-// school nursery year Sept 2028). Verify dates with each school / Kingston Council.
+// school nursery year Sept 2028). State-school route: good local primary → 11+ grammar.
+// Verify dates with Kingston Council / each school.
 const KID_MILESTONES = [
-  ['2026-11-15', 'Rokeby 4+ 등록 (선착순 — 지금)', '출생 후 언제든 등록, 등록비 £120. 44명 정원·보통 초과 지원. 오퍼는 입학 2년 전 12월(2027.12)부터 등록 순서대로'],
-  ['2026-11-15', 'Surbiton High Boys\' Prep Reception 등록', '비선발, 출생 후 언제든 등록, 등록비 £150 — 현재 절차는 학교에 확인'],
-  ['2026-11-30', '프렙 오픈데이 일정 확인·예약 (Rokeby · Surbiton High Boys\' Prep · Westbury House · Park Hill)', '인기 오픈데이는 매진됨 — 뜨면 바로 예약'],
   ['2026-11-30', '2세 발달 검진 (health visitor 2–2½세 리뷰) 예약 확인', '2027년 4월 전까지. 안내를 못 받았으면 health visiting team에 연락'],
   ['2026-11-30', '무료 보육 시간 코드 재확인 날짜 확인', 'Childcare Service 계정에서 3개월마다 재확인해야 혜택 유지 — 실제 날짜로 고쳐 두세요'],
-  ['2026-12-15', 'Aspire 너서리에 진학 경로 묻기', '졸업생이 주로 어느 학교로 가는지, 프렙 지원 시 너서리 리포트 써주는지 (Rokeby는 리포트가 조건)'],
-  ['2026-12-15', '도서관 Rhyme Time · Bookstart 등록 (무료)', 'Kingston 도서관 주간 프로그램'],
-  ['2027-01-15', '수영 레슨 등록 (2–3세 parent & toddler)', '주말 1회 — 음악·체육 클래스도 비교'],
-  ['2027-01-31', '공립 루트 확인 — 집 기준 배정 거리', 'Kingston 카운슬 "last distance offered": Christ Church CofE (KT5), Lime Tree, St Matthew\'s CofE. CofE 학교는 신앙 기준(교회 출석 기간)이 있으면 지금부터 해당'],
+  ['2026-11-30', 'Tax-Free Childcare 쓰고 있는지 확인', '£8 넣으면 정부가 £2 더해줌 (연 최대 £2,000) — 너서리 비용에 사용'],
+  ['2026-12-15', '도서관 Rhyme Time · Bookstart 등록 (무료)', 'Kingston 도서관 주간 프로그램 — 매주 가면 말·책 습관에 제일 효과 좋음'],
+  ['2027-01-15', '수영 레슨 (카운슬 수영장 parent & toddler)', '사설보다 저렴'],
+  ['2027-01-31', '집 기준 공립 초등 2~3곳 정하기', "Kingston 카운슬 \"last distance offered\"로 실제 배정 가능성 확인: Christ Church CofE (KT5), Lime Tree, St Matthew's CofE 등"],
+  ['2027-02-28', '후보 학교 Ofsted 리포트 읽기', 'Good/Outstanding + 최근 점검일 확인'],
+  ['2027-03-01', 'CofE 학교 신앙 기준 확인 → 교회 출석할지 결정', '기준에 출석 기간(보통 1~2년)이 있으면 지금부터 해당'],
   ['2027-03-01', '뉴몰든 한글학교 문의·대기 등록', '대기자 있음 — 입학 가능 나이 확인'],
-  ['2027-04-30', '학교 투어 2~3곳 완료 → 1순위 정하기', '사립 1순위 + 공립 플랜 B'],
-  ['2027-09-01', '학교 부설 너서리(2028년 9월) 갈지 결정', 'Westbury House · Park Hill 등 학교 너서리로 옮기면 그 학교 Reception으로 이어지기 쉬움 — 각 학교 확인'],
+  ['2027-09-01', '공립 초등 부설 너서리반 확인 (2028년 9월)', '무료 시간으로 다닐 수 있고 그 학교에 익숙해짐 (Reception 배정 우선권은 보통 없음)'],
   ['2027-10-17', '민우 3세 — 2028년 1월 학기부터 3세 universal 15시간 대상', '일하는 부모 30시간과 겹치니 너서리와 펀딩 확인'],
-  ['2027-12-01', 'Rokeby 오퍼 시작 — 수락·보증금 결정', '등록 순서대로 오퍼, 너서리 리포트 조건부'],
   ['2028-02-17', '프리스쿨 부스터 백신 (약 3세 4개월)', 'GP 예약 — 레드북 일정 확인'],
-  ['2028-09-01', '학교 너서리(Nursery 학년) 시작 가능 시점', ''],
-  ['2028-09-15', '공립 Reception 지원 오픈 + 남은 오픈데이', '2029년 9월 Reception 입학 대상'],
-  ['2028-10-01', '프렙용 너서리 리포트 요청 (Aspire)', 'Rokeby는 입학 전 9~10월에 요청'],
-  ['2029-01-15', 'Reception 입학 지원 마감 (보통 1월 15일)', 'Kingston 카운슬 온라인 지원, 지원 학교 순위 정하기'],
+  ['2028-09-15', '공립 초등 오픈데이 · 투어', '2029년 9월 Reception 입학 대상 — 가을에 몰려 있음'],
+  ['2029-01-15', 'Reception 입학 지원 마감 (보통 1월 15일)', 'Kingston 카운슬 온라인 지원 — 1지망을 현실적으로'],
   ['2029-04-16', '초등학교 배정 발표 (National Offer Day)', ''],
   ['2029-09-01', 'Reception 입학 🎒', ''],
-  ['2033-09-01', '11+ 준비 여부 결정 (Year 4)', 'Tiffin(그래머) · Kingston Grammar · Surbiton High 등'],
-  ['2035-06-01', '11+ (Tiffin 등 그래머스쿨) 등록 시기 — Year 5 여름', ''],
+  ['2033-09-01', '11+ 준비 여부 결정 (Year 4)', 'Tiffin 등 그래머스쿨은 무료 — 기출·문제집 위주로 저비용 준비 가능'],
+  ['2035-06-01', '11+ 등록 (Tiffin 등) — Year 5 여름', '사립 중학교는 학비 지원(bursary)도 이때 확인'],
 ];
-// School shortlist. Facts from school sites / directories as of Oct 2026 — confirm with each school.
+// School shortlist (state route). Facts from directories as of Oct 2026 — confirm with each school.
 const KID_SCHOOLS = [
-  ['Rokeby School', 'Kingston · 사립 남아 4–13', '4+ (2029.9)', '선착순 등록 (출생 후 언제든, £120) → 2027.12부터 오퍼, 너서리 리포트 조건', '지금 등록', 'https://www.rokebyschool.co.uk/admissions/admissions-process/'],
-  ['Surbiton High Boys\' Prep', 'Surbiton · 사립 남아 4–11', '4+ (2029.9)', '비선발, 출생 후 언제든 등록 (£150)', '오픈데이 + 등록', 'https://surbitonhigh.com/?p=1138'],
-  ['Westbury House', 'New Malden · 사립 공학 2–11', '너서리 → Reception', '학교 부설 너서리부터 연계', '투어 · 너서리 입학 시기 문의', ''],
-  ['Park Hill School & Nursery', 'Kingston · 사립 공학, 너서리 2세+', '너서리 → Reception', 'Rokeby 우선 연계는 확인 안 됨', '투어', ''],
-  ['Christ Church CofE Primary', 'Surbiton KT5 · 공립 (Good)', 'Reception (2029.9)', '카운슬 배정 — 거리·신앙 기준 확인', '배정 거리 확인', ''],
+  ['Christ Church CofE Primary', 'Surbiton KT5 · 공립 (Good)', 'Reception (2029.9)', '카운슬 배정 — 거리 · 신앙 기준 확인', '배정 거리 · 신앙 기준 확인', ''],
   ['Lime Tree Primary', 'Surbiton KT6 · 공립 (Good)', 'Reception (2029.9)', '카운슬 배정 — 거리 기준', '배정 거리 확인', ''],
+  ["St Matthew's CofE Primary", 'Surbiton KT6 · 공립', 'Reception (2029.9)', '카운슬 배정 — 거리 · 신앙 기준 확인', 'Ofsted · 배정 거리 확인', ''],
+  ['Tiffin School', 'Kingston · 공립 그래머 (무료)', '11+ (2036.9)', '11+ 시험 선발', '2033년쯤 준비 여부 결정', ''],
 ];
 const SCHOOL_STATUS = ['조사', '오픈데이 예약', '방문함', '등록함', '오퍼', '수락', '제외'];
 // Monthly ISA plan. `sync` links an asset to its row in the Strategy Lab summary.
@@ -999,7 +993,7 @@ const VIEWS = {
       </div>
       <div class="stack" style="order:-1">
         <div class="card"><h3>학교 후보</h3>
-          <div class="small muted">2029년 9월 Reception · 2028년 9월 학교 너서리 기준. 정보는 학교에 꼭 확인하세요.</div>
+          <div class="small muted">공립 루트: 집 근처 좋은 초등 → 11+ 그래머. 2029년 9월 Reception 기준, 정보는 학교·카운슬에 꼭 확인하세요.</div>
           <ul class="list">${state.kids.schools.map(sc => `<li style="flex-wrap:wrap;align-items:flex-start">
             <span class="t"><b>${sc.url ? `<a href="${esc(sc.url)}" target="_blank" rel="noopener">${esc(sc.name)}</a>` : esc(sc.name)}</b>
               <span class="small muted" style="display:block">${esc(sc.kind)} · ${esc(sc.entry)}</span>
