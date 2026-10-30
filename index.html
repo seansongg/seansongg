@@ -205,7 +205,8 @@ const CAREER_MILESTONES = [
 // Weekly time blocks; days are Mon=0 … Sun=6.
 const GYM_BLOCKS = [
   { days: [1, 3], start: '06:30', end: '07:15', area: 'fitness', title: 'Nuffield 30분 (출근 전)' },
-  { days: [6], start: '08:30', end: '09:15', area: 'fitness', title: 'Nuffield 30분' },
+  { days: [5], start: '15:45', end: '16:30', area: 'fitness', title: 'Nuffield 30분 (주말 필수)' },
+  { days: [6], start: '08:30', end: '09:15', area: 'fitness', title: 'Nuffield 30분 (주말 필수)' },
 ];
 // Short routines so there's nothing to decide at the gym.
 const ROUTINES = {
@@ -479,10 +480,12 @@ function nextGymSlot() {
 }
 function workoutReminder() {
   const n = daysSinceWorkout();
-  if (n !== null && n < 3) return '';
+  // Weekends are non-negotiable: nag on Sat/Sun until today's workout is logged.
+  const weekend = todayIdx() >= 5 && n !== 0;
+  if (!weekend && n !== null && n < 3) return '';
   const slot = nextGymSlot();
   return `<li><span style="width:18px"></span><span class="dot" style="${areaVar('fitness')}"></span>
-    <span class="t" data-action="go" data-tab="fitness" style="cursor:pointer">${n === null ? '운동 기록 없음' : `운동 ${n}일째 안 감`} — ${slot ? `다음 슬롯 ${slot}` : '시간표에 운동 블록 넣기'}</span>
+    <span class="t" data-action="go" data-tab="fitness" style="cursor:pointer">${weekend ? '주말 운동 (필수)' : n === null ? '운동 기록 없음' : `운동 ${n}일째 안 감`} — ${slot ? `다음 슬롯 ${slot}` : '시간표에 운동 블록 넣기'}</span>
     <span class="tag late">£${state.fitness.gym?.fee || 0}/월</span></li>`;
 }
 function fitnessStats() {
@@ -1074,7 +1077,7 @@ const VIEWS = {
       <div class="stack">
         <div class="card"><h3>자투리 시간 플랜</h3>
           ${slots.length ? `<ul class="list">${slots.map(b => `<li><span class="tag">${b.days.map(d => DAY_NAMES[d]).join('')} ${esc(b.start)}–${esc(b.end)}</span><span class="t">${esc(b.title)}</span></li>`).join('')}</ul>` : '<div class="empty">시간표에 운동 블록이 없어요</div>'}
-          <div class="hint">집에서 체육관까지 가까워서 출근 전 45분이 가장 확실한 슬롯이에요. 슬롯은 오늘 탭 → 주간 시간표 편집에서 바꿔요. 3일 넘게 안 가면 오늘 탭에 떠요.</div>
+          <div class="hint">주말 토·일 1번씩은 필수, 평일 화·목은 보너스예요. 집에서 체육관까지 가까워서 출근 전 45분도 현실적인 슬롯이에요. 슬롯은 오늘 탭 → 주간 시간표 편집에서 바꿔요. 3일 넘게 안 가면 오늘 탭에 떠요.</div>
         </div>
         <details class="card" id="routinesDetails" ${openDetails.has('routinesDetails') ? 'open' : ''}><summary style="cursor:pointer"><b>루틴 내용</b> <span class="small muted">체육관에서 고민하지 않게</span></summary>
           <ul class="list">${Object.entries(ROUTINES).map(([k, [name, body]]) => `<li style="align-items:flex-start"><span class="tag">${k}</span><span class="t"><b>${esc(name)}</b><span class="small muted" style="display:block">${esc(body)}</span></span></li>`).join('')}</ul>
