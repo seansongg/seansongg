@@ -95,7 +95,7 @@ ul.list li.done .t { text-decoration: line-through; color: var(--muted); }
 .week button.today { outline: 2px solid var(--text); outline-offset: 1px; }
 .bigbtn { width: 100%; padding: 16px; font-size: 17px; font-weight: 600; border-radius: 12px; cursor: pointer; border: 0; background: var(--fitness); color: #fff; font-family: inherit; }
 .bigbtn.done { background: var(--surface-2); color: var(--muted); }
-.table { width: 100%; min-width: 480px; border-collapse: collapse; font-size: 14px; }
+.table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 14px; }
 .table th, .table td { text-align: left; padding: 6px 4px; border-top: 1px solid var(--border); vertical-align: middle; }
 .table th { color: var(--muted); font-weight: 500; font-size: 12px; border-top: 0; }
 .table input, .table select { width: 100%; min-width: 64px; padding: 5px 6px; }
@@ -148,17 +148,25 @@ const AMAZON_STEPS = [
   '런칭 PPC 광고 세팅',
   '첫 리뷰 확보 (Vine 등)',
 ];
+const OLD_TENANT_STEPS = [
+  '방 상태 점검·청소·수리', '시세 조사 후 월세 결정', '기존 테넌트 2명에게 미리 공지',
+  '공용공간·유틸리티 분담 규칙 정리', '지역 규정 확인 (거주 인원·임대 허가)', '리스팅 작성 + 사진 올리기',
+  '문의 응대 / 쇼잉', '스크리닝 (신용·소득·레퍼런스)', '리스 계약 서명 + 보증금 수령', '입주 체크리스트 / 키 전달',
+];
 const TENANT_STEPS = [
+  'HMO 해당 여부 + 카운슬 라이선스 확인 (3명 이상·2가구 이상이면 HMO)',
+  '모기지·보험사에 세입자 추가 알리기',
+  '안전 서류: Gas Safety · EICR · EPC · 화재경보기/CO 경보기',
   '방 상태 점검·청소·수리',
-  '시세 조사 후 월세 결정',
+  '시세 조사 후 월세 결정 (SpareRoom 등)',
   '기존 테넌트 2명에게 미리 공지',
-  '공용공간·유틸리티 분담 규칙 정리',
-  '지역 규정 확인 (거주 인원·임대 허가)',
+  '공용공간·빌·카운슬 택스 분담 규칙 정리',
   '리스팅 작성 + 사진 올리기',
-  '문의 응대 / 쇼잉',
-  '스크리닝 (신용·소득·레퍼런스)',
-  '리스 계약 서명 + 보증금 수령',
-  '입주 체크리스트 / 키 전달',
+  '문의 응대 / 뷰잉',
+  'Right to Rent 확인 + 레퍼런스·신용 체크',
+  '계약서 서명 + How to Rent 가이드 전달',
+  '보증금 수령 → 30일 내 TDP 보호 등록',
+  '입주 인벤토리(사진) / 키 전달',
 ];
 const PRODUCT_STAGES = ['아이디어', '리서치', '샘플', '발주', '입고중', '판매중', '보류'];
 const CANDIDATE_STAGES = ['문의', '쇼잉 예정', '쇼잉 완료', '심사중', '승인', '계약 완료', '탈락'];
@@ -175,7 +183,8 @@ const weekDates = () => {
   return [...Array(7)].map((_, i) => fmt(addDays(monday, i)));
 };
 const shortDate = s => { const [, m, d] = s.split('-'); return `${+m}/${+d}`; };
-const won = n => (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
+const CURRENCY = '£';
+const money = n => { const v = Number(n) || 0; return (v < 0 ? '-' : '') + CURRENCY + Math.abs(v).toLocaleString('en-GB', { maximumFractionDigits: 2 }); };
 
 /* ---------- state ---------- */
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -191,8 +200,8 @@ function defaultState() {
     fitness: { log: {}, goalPerWeek: 2, minimum: '10분 걷기 또는 스트레칭' },
     house: {
       tenants: [
-        { id: uid(), name: '테넌트 1', room: '', rent: 0, leaseEnd: '', paid: {} },
-        { id: uid(), name: '테넌트 2', room: '', rent: 0, leaseEnd: '', paid: {} },
+        { id: uid(), name: '테넌트 1', room: '', rent: 780, dueDay: 1, leaseEnd: '', paid: {} },
+        { id: uid(), name: '테넌트 2', room: '', rent: 700, dueDay: 27, leaseEnd: '', paid: {} },
       ],
       targetRent: 0,
       steps: steps(TENANT_STEPS),
@@ -203,9 +212,24 @@ function defaultState() {
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return deepMerge(defaultState(), JSON.parse(raw));
+    if (raw) return migrate(deepMerge(defaultState(), JSON.parse(raw)));
   } catch (e) { /* storage unavailable */ }
   return defaultState();
+}
+// Fill rent/due day into the placeholder tenants saved before those fields existed.
+function migrate(s) {
+  const presets = { '테넌트 1': [780, 1], '테넌트 2': [700, 27] };
+  for (const t of s.house.tenants) {
+    const p = presets[t.name];
+    if (p && !Number(t.rent)) t.rent = p[0];
+    if (p && !t.dueDay) t.dueDay = p[1];
+  }
+  // Swap the original generic checklist for the UK one if it was never touched.
+  const st = s.house.steps;
+  if (st.length === OLD_TENANT_STEPS.length && st.every((x, i) => x.title === OLD_TENANT_STEPS[i] && !x.done)) {
+    s.house.steps = steps(TENANT_STEPS);
+  }
+  return s;
 }
 function deepMerge(base, saved) {
   for (const k in saved) {
@@ -301,13 +325,39 @@ function amazonStats() {
   const stepsDone = state.amazon.steps.filter(s => s.done).length;
   return { income, expense, net: income - expense, totalNet: totalIn - totalOut, stepsDone, stepsTotal: state.amazon.steps.length };
 }
+// This month's payment date for a tenant (day clamped to month length).
+function rentDueDate(t) {
+  if (!t.dueDay) return '';
+  const now = new Date();
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  return fmt(new Date(now.getFullYear(), now.getMonth(), Math.min(Number(t.dueDay), last)));
+}
+// Unpaid rent that is overdue, due today, or due within 3 days.
+function rentAlerts() {
+  const m = thisMonth(), now = today(), soon = fmt(addDays(new Date(), 3));
+  return state.house.tenants
+    .map(t => ({ t, due: rentDueDate(t) }))
+    .filter(({ t, due }) => due && due <= soon && !(t.paid && t.paid[m]))
+    .sort((a, b) => a.due.localeCompare(b.due));
+}
+function rentAlertItem({ t, due }) {
+  const now = today();
+  const label = due < now ? `지남 · ${shortDate(due)}` : due === now ? '오늘' : shortDate(due);
+  return `<li>
+    <input type="checkbox" data-action="toggle-rent" data-id="${t.id}" title="입금 확인">
+    <span class="dot" style="${areaVar('house')}"></span>
+    <span class="t">${esc(t.name || '테넌트')} 월세 ${money(t.rent)} 입금 확인</span>
+    <span class="tag${due < now ? ' late' : ''}">${label}</span></li>`;
+}
 function houseStats() {
   const m = thisMonth();
   const t = state.house.tenants;
   const rentTotal = t.reduce((s, x) => s + (Number(x.rent) || 0), 0);
   const paid = t.filter(x => x.paid && x.paid[m]).length;
+  const nextDue = t.filter(x => x.dueDay && !(x.paid && x.paid[m])).map(x => ({ t: x, due: rentDueDate(x) }))
+    .sort((a, b) => a.due.localeCompare(b.due))[0];
   const stepsDone = state.house.steps.filter(s => s.done).length;
-  return { count: t.length, rentTotal, paid, stepsDone, stepsTotal: state.house.steps.length };
+  return { count: t.length, rentTotal, paid, nextDue, stepsDone, stepsTotal: state.house.steps.length };
 }
 function nextKidEvent() {
   const now = today();
@@ -320,6 +370,7 @@ const VIEWS = {
     const now = today();
     const focus = state.tasks.filter(t => t.focus && !t.done);
     const urgent = sortTasks(state.tasks.filter(t => !t.done && !t.focus && t.due && t.due <= now));
+    const rent = rentAlerts();
     const fs = fitnessStats(), as = amazonStats(), hs = houseStats(), ev = nextKidEvent();
     const careerOpen = state.tasks.filter(t => t.area === 'career' && !t.done).length;
     const goals = state.career.goals;
@@ -329,10 +380,12 @@ const VIEWS = {
     return `
       <div class="cards">
         ${card('career', `${careerOpen}개 남음`, goals.length ? `목표 평균 ${Math.round(goalAvg)}%` : '목표를 정해보세요')}
-        ${card('amazon', `런칭 ${as.stepsDone}/${as.stepsTotal}`, `이번 달 순익 ${won(as.net)}`)}
+        ${card('amazon', `런칭 ${as.stepsDone}/${as.stepsTotal}`, `이번 달 순익 ${money(as.net)}`)}
         ${card('kids', ev ? esc(ev.title) : '일정 없음', ev ? `${ev.date === now ? '오늘' : shortDate(ev.date)} ${esc(ev.time || '')}` : '다가오는 일정 추가')}
         ${card('fitness', `이번 주 ${fs.week}/${fs.goal}`, state.fitness.log[now] ? '오늘 완료 ✓' : `최소: ${esc(state.fitness.minimum)}`)}
-        ${card('house', `월세 ${hs.paid}/${hs.count} 입금`, `3번째 테넌트 준비 ${hs.stepsDone}/${hs.stepsTotal}`)}
+        ${card('house', `월세 ${hs.paid}/${hs.count} 입금`, hs.nextDue
+          ? `다음: ${esc(hs.nextDue.t.name)} ${shortDate(hs.nextDue.due)} ${money(hs.nextDue.t.rent)}`
+          : `3번째 테넌트 준비 ${hs.stepsDone}/${hs.stepsTotal}`)}
       </div>
       <div class="grid" style="margin-top:12px">
         <div class="card">
@@ -354,8 +407,8 @@ const VIEWS = {
         </div>
       </div>
       <div class="card" style="margin-top:12px">
-        <h2>마감 지남 / 오늘 마감</h2>
-        ${urgent.length ? `<ul class="list">${urgent.map(t => taskItem(t, true)).join('')}</ul>` : '<div class="empty">없음 👍</div>'}
+        <h2>마감 지남 / 곧 마감</h2>
+        ${urgent.length || rent.length ? `<ul class="list">${rent.map(rentAlertItem).join('')}${urgent.map(t => taskItem(t, true)).join('')}</ul>` : '<div class="empty">없음 👍</div>'}
       </div>`;
   },
 
@@ -403,7 +456,7 @@ const VIEWS = {
                 <td>${editInput(P, p, 'cost', 'number', 'step="0.01"')}</td>
                 <td>${editInput(P, p, 'fee', 'number', 'step="0.01"')}</td>
                 <td>${editInput(P, p, 'price', 'number', 'step="0.01"')}</td>
-                <td class="${margin >= 0 ? 'pos' : 'neg'}" style="white-space:nowrap">${won(margin)} <span class="small">(${mp}%)</span></td>
+                <td class="${margin >= 0 ? 'pos' : 'neg'}" style="white-space:nowrap">${money(margin)} <span class="small">(${mp}%)</span></td>
                 <td><button class="icon" data-action="del-item" data-path="${P}" data-id="${p.id}">✕</button></td></tr>`;
             }).join('')}
           </table></div>
@@ -412,10 +465,10 @@ const VIEWS = {
           <div class="hint">마진 = 판매가 − 원가(배송·관세 포함) − FBA/리퍼럴 수수료. 광고비 감안하면 30% 이상이 안전해요.</div>
         </div>
         <div class="card"><h3>수입 / 지출</h3>
-          <div class="stat"><span>이번 달 수입</span><b class="pos">${won(s.income)}</b></div>
-          <div class="stat"><span>이번 달 지출</span><b class="neg">${won(s.expense)}</b></div>
-          <div class="stat"><span>이번 달 순익</span><b class="${s.net >= 0 ? 'pos' : 'neg'}">${won(s.net)}</b></div>
-          <div class="stat muted small"><span>누적 순익</span><b>${won(s.totalNet)}</b></div>
+          <div class="stat"><span>이번 달 수입</span><b class="pos">${money(s.income)}</b></div>
+          <div class="stat"><span>이번 달 지출</span><b class="neg">${money(s.expense)}</b></div>
+          <div class="stat"><span>이번 달 순익</span><b class="${s.net >= 0 ? 'pos' : 'neg'}">${money(s.net)}</b></div>
+          <div class="stat muted small"><span>누적 순익</span><b>${money(s.totalNet)}</b></div>
           <form class="row" data-form="ledger" style="margin-top:8px">
             <input type="date" name="date" value="${today()}" required>
             <select name="type"><option>지출</option><option>수입</option></select>
@@ -425,7 +478,7 @@ const VIEWS = {
           </form>
           ${ledger.length ? `<ul class="list">${ledger.slice(0, 15).map(e => `<li>
             <span class="tag">${shortDate(e.date)}</span><span class="t">${esc(e.memo || e.type)}</span>
-            <b class="${e.type === '수입' ? 'pos' : 'neg'}">${e.type === '수입' ? '+' : '−'}${won(e.amount)}</b>
+            <b class="${e.type === '수입' ? 'pos' : 'neg'}">${e.type === '수입' ? '+' : '−'}${money(e.amount)}</b>
             <button class="icon" data-action="del-item" data-path="amazon.ledger" data-id="${e.id}">✕</button></li>`).join('')}</ul>` : ''}
         </div>
       </div>
@@ -493,23 +546,24 @@ const VIEWS = {
       <div class="stack">
         <div class="card"><h3>테넌트 · ${m} 월세</h3>
           <div class="scroll-x"><table class="table">
-            <tr><th>이름</th><th>방</th><th>월세</th><th>계약 만료</th><th>입금</th><th></th></tr>
+            <tr><th>이름</th><th>방</th><th>월세 (${CURRENCY})</th><th>입금일</th><th>계약 만료</th><th>입금</th><th></th></tr>
             ${state.house.tenants.map(t => {
               const soon = t.leaseEnd && t.leaseEnd <= fmt(addDays(new Date(), 60));
               return `<tr>
                 <td style="min-width:100px">${editInput(T, t, 'name')}</td>
                 <td style="min-width:60px">${editInput(T, t, 'room')}</td>
                 <td>${editInput(T, t, 'rent', 'number')}</td>
+                <td>${editInput(T, t, 'dueDay', 'number', 'min="1" max="31"')}</td>
                 <td style="min-width:130px">${editInput(T, t, 'leaseEnd', 'date', soon ? 'style="border-color:var(--danger)" title="60일 내 만료"' : '')}</td>
                 <td><input type="checkbox" data-action="toggle-rent" data-id="${t.id}" ${t.paid && t.paid[m] ? 'checked' : ''}></td>
                 <td><button class="icon" data-action="del-item" data-path="${T}" data-id="${t.id}">✕</button></td></tr>`;
             }).join('')}
           </table></div>
           <button class="btn" data-action="add-tenant" style="margin-top:8px">+ 테넌트</button>
-          <div class="stat" style="margin-top:8px"><span>월세 합계 (현재)</span><b>${won(hs.rentTotal)}</b></div>
+          <div class="stat" style="margin-top:8px"><span>월세 합계 (현재)</span><b>${money(hs.rentTotal)}</b></div>
           <div class="stat"><span>입금 완료</span><b>${hs.paid} / ${hs.count}</b></div>
-          <div class="stat"><span>3번째 테넌트 목표 월세</span><input type="number" data-setting="house.targetRent" value="${esc(state.house.targetRent)}"></div>
-          ${target ? `<div class="stat muted small"><span>3명 기준 예상 월 수입</span><b>${won(hs.rentTotal + target)}</b></div>` : ''}
+          <div class="stat"><span>3번째 테넌트 목표 월세 (${CURRENCY})</span><input type="number" data-setting="house.targetRent" value="${esc(state.house.targetRent)}"></div>
+          ${target ? `<div class="stat muted small"><span>3명 기준 예상 월 수입</span><b>${money(hs.rentTotal + target)}</b></div>` : ''}
         </div>
         <div class="card"><h3>3번째 테넌트 후보</h3>
           <div class="scroll-x"><table class="table">
@@ -569,7 +623,7 @@ document.addEventListener('click', e => {
     }
     case 'workout': { const d = el.dataset.date; state.fitness.log[d] = !state.fitness.log[d]; if (!state.fitness.log[d]) delete state.fitness.log[d]; break; }
     case 'add-product': state.amazon.products.push({ id: uid(), name: '', stage: PRODUCT_STAGES[0], cost: '', fee: '', price: '' }); break;
-    case 'add-tenant': state.house.tenants.push({ id: uid(), name: '', room: '', rent: 0, leaseEnd: '', paid: {} }); break;
+    case 'add-tenant': state.house.tenants.push({ id: uid(), name: '', room: '', rent: 0, dueDay: 1, leaseEnd: '', paid: {} }); break;
     case 'add-candidate': state.house.candidates.push({ id: uid(), name: '', contact: '', stage: CANDIDATE_STAGES[0], memo: '' }); break;
     case 'toggle-rent': { const t = findIn('house.tenants', id), m = thisMonth(); t.paid = t.paid || {}; t.paid[m] = !t.paid[m]; break; }
     case 'export': return exportData();
