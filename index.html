@@ -202,9 +202,21 @@ const CAREER_MILESTONES = [
   ['2030-06-01', '퀀텀점프 목표 시점 (입사 4년차)', ''],
 ];
 // Weekly time blocks; days are Mon=0 … Sun=6.
+const GYM_BLOCKS = [
+  { days: [1, 3], start: '06:30', end: '07:15', area: 'fitness', title: 'Nuffield 30분 (출근 전)' },
+  { days: [6], start: '08:30', end: '09:15', area: 'fitness', title: 'Nuffield 30분' },
+];
+// Short routines so there's nothing to decide at the gym.
+const ROUTINES = {
+  A: ['30분 전신 근력', '로잉 5분 → 고블릿 스쿼트 · 덤벨 벤치 · 랫풀다운 · 루마니안 데드리프트 각 3×10 → 플랭크 3×30초'],
+  B: ['30분 유산소 + 코어', '바이크/로잉 인터벌 20분 (1분 세게 / 1분 천천히) → 데드버그 · 사이드 플랭크 · 버드독 10분'],
+  C: ['20분 급속 서킷', '머신 3개(레그프레스 · 체스트프레스 · 시티드로우) 12회씩 3바퀴 — 시간 없는 날'],
+  R: ['집 10분', '스쿼트 20 · 푸시업 10 · 런지 20 · 플랭크 1분 × 2바퀴 — 체육관 못 간 날'],
+};
 const DEFAULT_SCHEDULE = [
   { days: [0, 1, 2, 3], start: '21:00', end: '22:00', area: 'career', title: 'CFA 공부' },
   { days: [5], start: '07:00', end: '09:00', area: 'career', title: 'CFA 공부' },
+  ...GYM_BLOCKS,
 ];
 const DAY_NAMES = ['월', '화', '수', '목', '금', '토', '일'];
 // Annual events. rule: fixed {m,d} | nth weekday {m,n,wd(0=Sun)} | easter offset | explicit dates (lunar).
@@ -221,20 +233,43 @@ const ANNUAL_EVENTS = [
   ['추석', { t: 'dates', dates: ['2027-09-15', '2028-10-03', '2029-09-22'] }, 14, '송편, 가족 영상통화'],
 ];
 // Education & development timeline for a child born 2024-10-17 (Reception entry Sept 2029).
+// Education & development plan for Minwoo (born 2024-10-17; Reception entry Sept 2029,
+// school nursery year Sept 2028). Verify dates with each school / Kingston Council.
 const KID_MILESTONES = [
+  ['2026-11-15', 'Rokeby 4+ 등록 (선착순 — 지금)', '출생 후 언제든 등록, 등록비 £120. 44명 정원·보통 초과 지원. 오퍼는 입학 2년 전 12월(2027.12)부터 등록 순서대로'],
+  ['2026-11-15', 'Surbiton High Boys\' Prep Reception 등록', '비선발, 출생 후 언제든 등록, 등록비 £150 — 현재 절차는 학교에 확인'],
+  ['2026-11-30', '프렙 오픈데이 일정 확인·예약 (Rokeby · Surbiton High Boys\' Prep · Westbury House · Park Hill)', '인기 오픈데이는 매진됨 — 뜨면 바로 예약'],
   ['2026-11-30', '2세 발달 검진 (health visitor 2–2½세 리뷰) 예약 확인', '2027년 4월 전까지. 안내를 못 받았으면 health visiting team에 연락'],
   ['2026-11-30', '무료 보육 시간 코드 재확인 날짜 확인', 'Childcare Service 계정에서 3개월마다 재확인해야 혜택 유지 — 실제 날짜로 고쳐 두세요'],
+  ['2026-12-15', 'Aspire 너서리에 진학 경로 묻기', '졸업생이 주로 어느 학교로 가는지, 프렙 지원 시 너서리 리포트 써주는지 (Rokeby는 리포트가 조건)'],
   ['2026-12-15', '도서관 Rhyme Time · Bookstart 등록 (무료)', 'Kingston 도서관 주간 프로그램'],
-  ['2027-01-15', '주말 활동 알아보기 (수영, 음악, 체육 클래스)', '2–3세 parent & toddler 수업'],
-  ['2027-09-01', '사립 프렙스쿨 관심 있으면 3+/4+ 등록 시기 확인', '학교마다 입학 1–2년 전에 등록 마감'],
+  ['2027-01-15', '수영 레슨 등록 (2–3세 parent & toddler)', '주말 1회 — 음악·체육 클래스도 비교'],
+  ['2027-01-31', '공립 루트 확인 — 집 기준 배정 거리', 'Kingston 카운슬 "last distance offered": Christ Church CofE (KT5), Lime Tree, St Matthew\'s CofE. CofE 학교는 신앙 기준(교회 출석 기간)이 있으면 지금부터 해당'],
+  ['2027-03-01', '뉴몰든 한글학교 문의·대기 등록', '대기자 있음 — 입학 가능 나이 확인'],
+  ['2027-04-30', '학교 투어 2~3곳 완료 → 1순위 정하기', '사립 1순위 + 공립 플랜 B'],
+  ['2027-09-01', '학교 부설 너서리(2028년 9월) 갈지 결정', 'Westbury House · Park Hill 등 학교 너서리로 옮기면 그 학교 Reception으로 이어지기 쉬움 — 각 학교 확인'],
   ['2027-10-17', '민우 3세 — 2028년 1월 학기부터 3세 universal 15시간 대상', '일하는 부모 30시간과 겹치니 너서리와 펀딩 확인'],
+  ['2027-12-01', 'Rokeby 오퍼 시작 — 수락·보증금 결정', '등록 순서대로 오퍼, 너서리 리포트 조건부'],
   ['2028-02-17', '프리스쿨 부스터 백신 (약 3세 4개월)', 'GP 예약 — 레드북 일정 확인'],
-  ['2028-09-15', '초등학교 오픈데이·투어 시작', '2029년 9월 Reception 입학 대상'],
+  ['2028-09-01', '학교 너서리(Nursery 학년) 시작 가능 시점', ''],
+  ['2028-09-15', '공립 Reception 지원 오픈 + 남은 오픈데이', '2029년 9월 Reception 입학 대상'],
+  ['2028-10-01', '프렙용 너서리 리포트 요청 (Aspire)', 'Rokeby는 입학 전 9~10월에 요청'],
   ['2029-01-15', 'Reception 입학 지원 마감 (보통 1월 15일)', 'Kingston 카운슬 온라인 지원, 지원 학교 순위 정하기'],
   ['2029-04-16', '초등학교 배정 발표 (National Offer Day)', ''],
   ['2029-09-01', 'Reception 입학 🎒', ''],
-  ['2035-06-01', '11+ (Tiffin 등 그래머스쿨) 등록 시기 — Year 5 여름', '준비 여부는 Year 3–4쯤 결정'],
+  ['2033-09-01', '11+ 준비 여부 결정 (Year 4)', 'Tiffin(그래머) · Kingston Grammar · Surbiton High 등'],
+  ['2035-06-01', '11+ (Tiffin 등 그래머스쿨) 등록 시기 — Year 5 여름', ''],
 ];
+// School shortlist. Facts from school sites / directories as of Oct 2026 — confirm with each school.
+const KID_SCHOOLS = [
+  ['Rokeby School', 'Kingston · 사립 남아 4–13', '4+ (2029.9)', '선착순 등록 (출생 후 언제든, £120) → 2027.12부터 오퍼, 너서리 리포트 조건', '지금 등록', 'https://www.rokebyschool.co.uk/admissions/admissions-process/'],
+  ['Surbiton High Boys\' Prep', 'Surbiton · 사립 남아 4–11', '4+ (2029.9)', '비선발, 출생 후 언제든 등록 (£150)', '오픈데이 + 등록', 'https://surbitonhigh.com/?p=1138'],
+  ['Westbury House', 'New Malden · 사립 공학 2–11', '너서리 → Reception', '학교 부설 너서리부터 연계', '투어 · 너서리 입학 시기 문의', ''],
+  ['Park Hill School & Nursery', 'Kingston · 사립 공학, 너서리 2세+', '너서리 → Reception', 'Rokeby 우선 연계는 확인 안 됨', '투어', ''],
+  ['Christ Church CofE Primary', 'Surbiton KT5 · 공립 (Good)', 'Reception (2029.9)', '카운슬 배정 — 거리·신앙 기준 확인', '배정 거리 확인', ''],
+  ['Lime Tree Primary', 'Surbiton KT6 · 공립 (Good)', 'Reception (2029.9)', '카운슬 배정 — 거리 기준', '배정 거리 확인', ''],
+];
+const SCHOOL_STATUS = ['조사', '오픈데이 예약', '방문함', '등록함', '오퍼', '수락', '제외'];
 const PRODUCT_STAGES = ['아이디어', '리서치', '샘플', '발주', '입고중', '판매중', '보류'];
 const CANDIDATE_STAGES = ['문의', '쇼잉 예정', '쇼잉 완료', '심사중', '승인', '계약 완료', '탈락'];
 
@@ -282,8 +317,9 @@ function defaultState() {
       annual: ANNUAL_EVENTS.map(([title, rule, lead, note]) => ({ id: uid(), title, rule, lead, note })),
       prepared: {},
       milestones: KID_MILESTONES.map(([date, title, note]) => ({ id: uid(), date, title, note, done: false })),
+      schools: KID_SCHOOLS.map(([name, kind, entry, how, action, url]) => ({ id: uid(), name, kind, entry, how, action, url, status: '조사' })),
     },
-    fitness: { log: {}, goalPerWeek: 2, minimum: '10분 걷기 또는 스트레칭' },
+    fitness: { log: {}, goalPerWeek: 2, minimum: '집 10분 (R)', gym: { name: 'Nuffield Health Surbiton', fee: 120 } },
     house: {
       tenants: [
         { id: uid(), name: '테넌트 1', room: '', rent: 780, dueDay: 1, leaseEnd: '', paid: {} },
@@ -417,6 +453,29 @@ function editInput(path, item, field, type = 'text', attrs = '') {
 }
 
 /* ---------- derived stats ---------- */
+function daysSinceWorkout() {
+  const now = today(), last = Object.keys(state.fitness.log).filter(d => state.fitness.log[d] && d <= now).sort().pop();
+  return last ? -daysUntil(last) : null;
+}
+// Next fitness block in the weekly timetable from now on.
+function nextGymSlot() {
+  const blocks = state.schedule.filter(b => b.area === 'fitness');
+  const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+  for (let k = 0; k < 8; k++) {
+    const day = (todayIdx() + k) % 7;
+    const hit = blocks.filter(b => b.days.includes(day) && (k > 0 || toMin(b.start) > nowMin)).sort((a, b) => a.start.localeCompare(b.start))[0];
+    if (hit) return `${k === 0 ? '오늘' : k === 1 ? '내일' : DAY_NAMES[day] + '요일'} ${hit.start}`;
+  }
+  return null;
+}
+function workoutReminder() {
+  const n = daysSinceWorkout();
+  if (n !== null && n < 3) return '';
+  const slot = nextGymSlot();
+  return `<li><span style="width:18px"></span><span class="dot" style="${areaVar('fitness')}"></span>
+    <span class="t" data-action="go" data-tab="fitness" style="cursor:pointer">${n === null ? '운동 기록 없음' : `운동 ${n}일째 안 감`} — ${slot ? `다음 슬롯 ${slot}` : '시간표에 운동 블록 넣기'}</span>
+    <span class="tag late">£${state.fitness.gym?.fee || 0}/월</span></li>`;
+}
 function fitnessStats() {
   const wk = weekDates();
   const week = wk.filter(d => state.fitness.log[d]).length;
@@ -711,8 +770,8 @@ const VIEWS = {
       </div>
       <div class="card" style="margin-top:12px">
         <h2>리마인더 · 곧 마감</h2>
-        ${urgent.length || rent.length || fbaDeadlines.length || evRem.length || msRem.length || winReminder()
-          ? `<ul class="list">${evRem.map(x => eventItem(x, true)).join('')}${winReminder()}${rent.map(rentAlertItem).join('')}${msRem.map(m => milestoneItem(m, true)).join('')}${fbaDeadlines.map(deadlineItem).join('')}${urgent.map(t => taskItem(t, true)).join('')}</ul>`
+        ${urgent.length || rent.length || fbaDeadlines.length || evRem.length || msRem.length || winReminder() || workoutReminder()
+          ? `<ul class="list">${evRem.map(x => eventItem(x, true)).join('')}${workoutReminder()}${winReminder()}${rent.map(rentAlertItem).join('')}${msRem.map(m => milestoneItem(m, true)).join('')}${fbaDeadlines.map(deadlineItem).join('')}${urgent.map(t => taskItem(t, true)).join('')}</ul>`
           : '<div class="empty">없음 👍</div>'}
       </div>`;
   },
@@ -856,11 +915,11 @@ const VIEWS = {
     const upcoming = [...state.kids.events].filter(e => e.date >= now).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
     const ch = state.kids.child, annual = upcomingAnnual();
     const ms = [...state.kids.milestones].sort((a, b) => a.done - b.done || a.date.localeCompare(b.date));
-    return `<div class="grid">
+    return `<div class="card" style="border-left:4px solid var(--kids);margin-bottom:12px">
+        <div class="row" style="justify-content:space-between"><h3 style="margin:0">👶 ${esc(ch.name)} · ${childAge()}</h3><span class="small muted">${esc(ch.nursery)}</span></div>
+      </div>
+      <div class="grid">
       <div class="stack">
-        <div class="card" style="border-left:4px solid var(--kids)">
-          <div class="row" style="justify-content:space-between"><h3 style="margin:0">👶 ${esc(ch.name)} · ${childAge()}</h3><span class="small muted">${esc(ch.nursery)}</span></div>
-        </div>
         <div class="card"><h3>연간 이벤트 리마인더</h3>
           <div class="small muted">준비 기간에 들어가면 오늘 탭에 떠요. 준비 끝나면 체크.</div>
           <ul class="list">${annual.map(x => `${eventItem(x, false, true).replace('</li>', '')}
@@ -887,7 +946,20 @@ const VIEWS = {
         </div>
         ${taskPanel('kids', '할 일 / 살 것')}
       </div>
-      <div class="stack">
+      <div class="stack" style="order:-1">
+        <div class="card"><h3>학교 후보</h3>
+          <div class="small muted">2029년 9월 Reception · 2028년 9월 학교 너서리 기준. 정보는 학교에 꼭 확인하세요.</div>
+          <ul class="list">${state.kids.schools.map(sc => `<li style="flex-wrap:wrap;align-items:flex-start">
+            <span class="t"><b>${sc.url ? `<a href="${esc(sc.url)}" target="_blank" rel="noopener">${esc(sc.name)}</a>` : esc(sc.name)}</b>
+              <span class="small muted" style="display:block">${esc(sc.kind)} · ${esc(sc.entry)}</span>
+              <span class="small" style="display:block">${esc(sc.how)}</span>
+              <span class="small" style="display:block;color:var(--kids)">→ ${esc(sc.action)}</span></span>
+            <select data-path="kids.schools" data-id="${sc.id}" data-field="status" style="width:auto">${options(SCHOOL_STATUS, sc.status)}</select>
+            <button class="icon" data-action="del-item" data-path="kids.schools" data-id="${sc.id}">✕</button></li>`).join('')}</ul>
+          <form class="row" data-form="school" style="margin-top:8px">
+            <input class="grow" name="name" placeholder="학교 추가" required><button class="btn">추가</button>
+          </form>
+        </div>
         <div class="card"><h3>교육 · 발달 타임라인</h3>
           <div class="small muted">2주 전부터 오늘 탭에 떠요. 영국 일반 일정 기준이라 날짜는 카운슬·너서리 안내로 확인하세요.</div>
           <ul class="list">${ms.map(m => milestoneItem(m)).join('')}</ul>
@@ -904,25 +976,40 @@ const VIEWS = {
   fitness() {
     const fs = fitnessStats(), now = today(), wk = weekDates();
     const names = ['월', '화', '수', '목', '금', '토', '일'];
-    const doneToday = !!state.fitness.log[now];
+    const doneToday = state.fitness.log[now], gym = state.fitness.gym || {}, since = daysSinceWorkout();
+    const perVisit = fs.month ? (Number(gym.fee) || 0) / fs.month : Number(gym.fee) || 0;
+    const slots = state.schedule.filter(b => b.area === 'fitness');
     return `<div class="grid">
       <div class="stack">
+        <div class="card" style="border-left:4px solid var(--fitness)">
+          <div class="row" style="justify-content:space-between"><h3 style="margin:0">🏋️ ${esc(gym.name || '체육관')}</h3><span class="small muted">£${esc(gym.fee)}/월</span></div>
+          <div class="stat" style="margin-top:8px"><span>이번 달 1회당 비용</span><b class="${fs.month >= 8 ? 'pos' : 'neg'}">£${perVisit.toFixed(perVisit < 10 ? 2 : 0)}</b></div>
+          <div class="small muted">${fs.month}회 갔어요 · 주 2회면 1회당 약 £14 · ${since === null ? '아직 기록 없음' : since === 0 ? '오늘 운동함 ✓' : `마지막 운동 ${since}일 전`}</div>
+          <div class="small muted">평일 06:30–22:00 · 주말 08:00–20:00 (Simpson Way, KT6)</div>
+        </div>
         <div class="card">
-          <button class="bigbtn${doneToday ? ' done' : ''}" data-action="workout" data-date="${now}">${doneToday ? '오늘 했음 ✓ (취소하려면 클릭)' : '오늘 운동했다!'}</button>
-          <div class="small muted" style="margin-top:8px">최소 버전: <b>${esc(state.fitness.minimum)}</b> — 이것만 해도 체크하세요. 0일보다 10분이 낫습니다.</div>
+          <h3>오늘 한 것 ${doneToday ? `<span class="tag" style="background:var(--fitness);color:#fff">${esc(typeof doneToday === 'string' ? ROUTINES[doneToday]?.[0] || '완료' : '완료')} ✓</span>` : ''}</h3>
+          <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
+            ${Object.entries(ROUTINES).map(([k, [name]]) => `<button class="btn${doneToday === k ? ' primary' : ''}" data-action="workout-r" data-r="${k}" style="padding:12px 8px">${k} · ${esc(name)}</button>`).join('')}
+          </div>
+          <div class="small muted" style="margin-top:8px">하기 싫은 날 최소 버전: <b>${esc(state.fitness.minimum)}</b> — 이것만 해도 체크하세요.</div>
           <div class="row" style="justify-content:space-between;margin-top:12px"><b>이번 주</b><span class="small muted">${fs.week} / ${fs.goal}회</span></div>
           ${bar(Math.min(100, pct(fs.week, fs.goal)), 'fitness')}
           <div class="week">${wk.map((d, i) => `<button class="${state.fitness.log[d] ? 'on' : ''}${d === now ? ' today' : ''}" data-action="workout" data-date="${d}">${names[i]}</button>`).join('')}</div>
         </div>
-        <div class="card">
-          <div class="stat"><span>연속 기록</span><b>${fs.streak}일</b></div>
-          <div class="stat"><span>이번 달</span><b>${fs.month}회</b></div>
-        </div>
       </div>
       <div class="stack">
+        <div class="card"><h3>자투리 시간 플랜</h3>
+          ${slots.length ? `<ul class="list">${slots.map(b => `<li><span class="tag">${b.days.map(d => DAY_NAMES[d]).join('')} ${esc(b.start)}–${esc(b.end)}</span><span class="t">${esc(b.title)}</span></li>`).join('')}</ul>` : '<div class="empty">시간표에 운동 블록이 없어요</div>'}
+          <div class="hint">집에서 체육관까지 가까워서 출근 전 45분이 가장 확실한 슬롯이에요. 슬롯은 오늘 탭 → 주간 시간표 편집에서 바꿔요. 3일 넘게 안 가면 오늘 탭에 떠요.</div>
+        </div>
+        <details class="card" id="routinesDetails" ${openDetails.has('routinesDetails') ? 'open' : ''}><summary style="cursor:pointer"><b>루틴 내용</b> <span class="small muted">체육관에서 고민하지 않게</span></summary>
+          <ul class="list">${Object.entries(ROUTINES).map(([k, [name, body]]) => `<li style="align-items:flex-start"><span class="tag">${k}</span><span class="t"><b>${esc(name)}</b><span class="small muted" style="display:block">${esc(body)}</span></span></li>`).join('')}</ul>
+        </details>
         <div class="card"><h3>설정</h3>
           <div class="stack">
             <label class="row small">주간 목표 <input type="number" min="1" max="7" data-setting="fitness.goalPerWeek" value="${esc(state.fitness.goalPerWeek)}"> 회</label>
+            <label class="row small">월 회비 £<input type="number" min="0" data-setting="fitness.gym.fee" value="${esc(gym.fee)}"></label>
             <label class="small">최소 버전 (하기 싫은 날 기준)<input style="width:100%;margin-top:4px" data-setting="fitness.minimum" value="${esc(state.fitness.minimum)}"></label>
           </div>
           <div class="hint">처음엔 주 2회로 시작해서 4주 연속 달성하면 1회씩 올리세요.</div>
@@ -1021,6 +1108,7 @@ document.addEventListener('click', e => {
       if (!confirm('삭제할까요?')) return;
       const arr = getPath(path); arr.splice(arr.findIndex(x => x.id === id), 1); break;
     }
+    case 'workout-r': { const r = el.dataset.r; state.fitness.log[today()] === r ? delete state.fitness.log[today()] : (state.fitness.log[today()] = r); break; }
     case 'workout': { const d = el.dataset.date; state.fitness.log[d] = !state.fitness.log[d]; if (!state.fitness.log[d]) delete state.fitness.log[d]; break; }
     case 'add-product': state.amazon.products.push({ id: uid(), name: '', stage: PRODUCT_STAGES[0], cost: '', fee: '', price: '' }); break;
     case 'add-tenant': state.house.tenants.push({ id: uid(), name: '', room: '', rent: 0, dueDay: 1, leaseEnd: '', paid: {} }); break;
@@ -1050,6 +1138,7 @@ document.addEventListener('submit', e => {
     case 'goal': state.career.goals.push({ id: uid(), title: v.title.trim(), progress: 0 }); break;
     case 'ledger': state.amazon.ledger.push({ id: uid(), date: v.date, type: v.type, amount: Number(v.amount), memo: v.memo.trim() }); break;
     case 'event': state.kids.events.push({ id: uid(), date: v.date, time: v.time, title: v.title.trim() }); break;
+    case 'school': state.kids.schools.push({ id: uid(), name: v.name.trim(), kind: '', entry: '', how: '', action: '조사', url: '', status: '조사' }); break;
     case 'win': state.career.wins.push({ id: uid(), date: v.date, text: v.text.trim() }); break;
     case 'cfa-log': state.career.cfa.log.push({ id: uid(), date: v.date, minutes: Number(v.minutes), topic: v.topic }); break;
     case 'milestone': getPath(f.dataset.path).push({ id: uid(), date: v.date, title: v.title.trim(), note: '', done: false }); break;
