@@ -117,7 +117,7 @@ footer { margin: 28px 0 8px; display: flex; flex-wrap: wrap; gap: 8px; align-ite
   <nav id="tabs"></nav>
   <main id="main"></main>
   <footer>
-    <span>데이터는 이 브라우저에만 저장돼요.</span>
+    <span id="storageNote">데이터는 이 브라우저에만 저장돼요.</span>
     <button class="btn" data-action="export">백업 내보내기</button>
     <label class="btn" style="cursor:pointer">백업 불러오기<input type="file" id="importFile" accept="application/json" hidden></label>
     <button class="btn" data-action="theme">테마 전환</button>
@@ -240,7 +240,27 @@ function deepMerge(base, saved) {
   return base;
 }
 let state = load();
-function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* ignore */ } }
+let stateRef = null, saveTimer = null, saving = false, saveAgain = false;
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
+  if (stateRef) { clearTimeout(saveTimer); saveTimer = setTimeout(saveRemote, 800); }
+}
+// One write at a time; a save requested mid-write runs once it finishes.
+async function saveRemote() {
+  if (saving) { saveAgain = true; return; }
+  saving = true;
+  try { await stateRef.set({ json: JSON.stringify(state), savedAt: new Date().toISOString() }); }
+  catch (e) { document.getElementById('storageNote').textContent = '저장 실패 — 이 브라우저에만 저장됐어요.'; }
+  saving = false;
+  if (saveAgain) { saveAgain = false; saveRemote(); }
+}
+
+/* Amazon sync: a summary of the FBA launch board, written by Claude into
+   data/users/<id>/amazonSync. Shape:
+   { updatedAt, boardUrl, product, progress:{done,total}, stage:{index,name,weeks},
+     stages:[{name,done,total}], next:[string], deadlines:[{date,title}],
+     suppliers:[{contact,product,status,price}], budget:{spent,planned,cap} } */
+let amazonSync = null;
 const getPath = p => p.split('.').reduce((o, k) => o[k], state);
 
 /* ---------- html helpers ---------- */
@@ -364,6 +384,70 @@ function nextKidEvent() {
   return [...state.kids.events].filter(e => e.date >= now).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))[0];
 }
 
+/* ---------- amazon sync ---------- */
+const syncPct = () => { const p = amazonSync?.progress; return p && p.total ? Math.round(p.done / p.total * 100) : 0; };
+// FBA deadlines that are past or within the next 7 days.
+function syncDeadlines() {
+  if (!amazonSync?.deadlines) return [];
+  const soon = fmt(addDays(new Date(), 7));
+  return amazonSync.deadlines.filter(d => d.date && d.date <= soon).sort((a, b) => a.date.localeCompare(b.date));
+}
+function deadlineItem(d) {
+  const now = today();
+  const label = d.date < now ? `지남 · ${shortDate(d.date)}` : d.date === now ? '오늘' : shortDate(d.date);
+  return `<li><span style="width:18px"></span><span class="dot" style="${areaVar('amazon')}"></span>
+    <span class="t">${esc(d.title)}</span><span class="tag${d.date < now ? ' late' : ''}">${label}</span></li>`;
+}
+function ago(iso) {
+  const min = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (!(min >= 0)) return '';
+  if (min < 60) return `${min}분 전`;
+  if (min < 1440) return `${Math.round(min / 60)}시간 전`;
+  return `${Math.round(min / 1440)}일 전`;
+}
+function amazonSyncedView() {
+  const S = amazonSync, p = S.progress || {}, b = S.budget || {}, now = today();
+  const deadlines = [...(S.deadlines || [])].sort((x, y) => x.date.localeCompare(y.date));
+  return `<div class="grid">
+    <div class="stack">
+      <div class="card" style="border-left:4px solid var(--amazon)">
+        <div class="row" style="justify-content:space-between">
+          <h3 style="margin:0">FBA 런칭 · ${esc(S.product || '')}</h3>
+          ${S.boardUrl ? `<a class="small" href="${esc(S.boardUrl)}" target="_blank" rel="noopener">보드 열기 ↗</a>` : ''}
+        </div>
+        <div class="small muted">FBA 런칭 보드에서 자동 동기화${S.updatedAt ? ` · ${ago(S.updatedAt)}` : ''}</div>
+        <div class="row small" style="justify-content:space-between;margin-top:10px"><b>전체 진행</b><span class="muted">${p.done ?? 0} / ${p.total ?? 0} (${syncPct()}%)</span></div>
+        ${bar(syncPct(), 'amazon')}
+        <div style="margin-top:8px"><span class="small muted">지금 단계</span><div style="font-weight:650">${esc(S.stage?.name || '—')} <span class="small muted">${esc(S.stage?.weeks || '')}</span></div></div>
+        ${S.next?.length ? `<ul class="list">${S.next.map(t => `<li><span class="dot" style="${areaVar('amazon')}"></span><span class="t">${esc(t)}</span></li>`).join('')}</ul>` : ''}
+      </div>
+      <div class="card"><h3>단계</h3>
+        <ul class="list">${(S.stages || []).map((st, i) => {
+          const done = st.total && st.done === st.total, cur = i === S.stage?.index;
+          return `<li class="${done ? 'done' : ''}"><span class="tag">${done ? '✓' : i}</span>
+            <span class="t" style="${cur ? 'font-weight:650' : ''}">${esc(st.name)}</span><span class="small muted">${st.done}/${st.total}</span></li>`;
+        }).join('')}</ul>
+      </div>
+      ${taskPanel('amazon', '내 할 일 (보드 외)')}
+    </div>
+    <div class="stack">
+      <div class="card"><h3>마감 · 결정 날짜</h3>
+        ${deadlines.length ? `<ul class="list">${deadlines.map(d => `<li><span class="tag${d.date < now ? ' late' : ''}">${d.date === now ? '오늘' : shortDate(d.date)}</span><span class="t">${esc(d.title)}</span></li>`).join('')}</ul>` : '<div class="empty">없음</div>'}
+      </div>
+      <div class="card"><h3>진행 중인 공급처</h3>
+        ${S.suppliers?.length ? `<ul class="list">${S.suppliers.map(x => `<li><span class="t"><b>${esc(x.contact)}</b> <span class="small muted">${esc(x.product || '')}</span></span>
+          ${x.price != null ? `<span class="small">$${esc(x.price)}</span>` : ''}<span class="tag">${esc(x.status)}</span></li>`).join('')}</ul>` : '<div class="empty">없음</div>'}
+      </div>
+      <div class="card"><h3>예산</h3>
+        <div class="stat"><span>사용</span><b>${money(b.spent)}</b></div>
+        ${b.cap ? bar(Math.min(100, pct(b.spent, b.cap)), 'amazon') : ''}
+        <div class="stat small muted"><span>계획 합계 / 상한</span><b>${money(b.planned)} / ${money(b.cap)}</b></div>
+      </div>
+      ${notesPanel('amazon', '아이디어, 공급처 메모…')}
+    </div>
+  </div>`;
+}
+
 /* ---------- views ---------- */
 const VIEWS = {
   today() {
@@ -371,6 +455,7 @@ const VIEWS = {
     const focus = state.tasks.filter(t => t.focus && !t.done);
     const urgent = sortTasks(state.tasks.filter(t => !t.done && !t.focus && t.due && t.due <= now));
     const rent = rentAlerts();
+    const fbaDeadlines = syncDeadlines();
     const fs = fitnessStats(), as = amazonStats(), hs = houseStats(), ev = nextKidEvent();
     const careerOpen = state.tasks.filter(t => t.area === 'career' && !t.done).length;
     const goals = state.career.goals;
@@ -380,7 +465,9 @@ const VIEWS = {
     return `
       <div class="cards">
         ${card('career', `${careerOpen}개 남음`, goals.length ? `목표 평균 ${Math.round(goalAvg)}%` : '목표를 정해보세요')}
-        ${card('amazon', `런칭 ${as.stepsDone}/${as.stepsTotal}`, `이번 달 순익 ${money(as.net)}`)}
+        ${amazonSync
+          ? card('amazon', esc(amazonSync.stage?.name || '—'), `전체 ${syncPct()}%${amazonSync.next?.[0] ? ` · 다음: ${esc(amazonSync.next[0])}` : ''}`)
+          : card('amazon', `런칭 ${as.stepsDone}/${as.stepsTotal}`, `이번 달 순익 ${money(as.net)}`)}
         ${card('kids', ev ? esc(ev.title) : '일정 없음', ev ? `${ev.date === now ? '오늘' : shortDate(ev.date)} ${esc(ev.time || '')}` : '다가오는 일정 추가')}
         ${card('fitness', `이번 주 ${fs.week}/${fs.goal}`, state.fitness.log[now] ? '오늘 완료 ✓' : `최소: ${esc(state.fitness.minimum)}`)}
         ${card('house', `월세 ${hs.paid}/${hs.count} 입금`, hs.nextDue
@@ -408,7 +495,7 @@ const VIEWS = {
       </div>
       <div class="card" style="margin-top:12px">
         <h2>마감 지남 / 곧 마감</h2>
-        ${urgent.length || rent.length ? `<ul class="list">${rent.map(rentAlertItem).join('')}${urgent.map(t => taskItem(t, true)).join('')}</ul>` : '<div class="empty">없음 👍</div>'}
+        ${urgent.length || rent.length || fbaDeadlines.length ? `<ul class="list">${rent.map(rentAlertItem).join('')}${fbaDeadlines.map(deadlineItem).join('')}${urgent.map(t => taskItem(t, true)).join('')}</ul>` : '<div class="empty">없음 👍</div>'}
       </div>`;
   },
 
@@ -434,6 +521,7 @@ const VIEWS = {
   },
 
   amazon() {
+    if (amazonSync) return amazonSyncedView();
     const s = amazonStats();
     const P = 'amazon.products';
     const products = state.amazon.products;
@@ -598,6 +686,13 @@ function render() {
   document.getElementById('main').innerHTML = (VIEWS[state.tab] || VIEWS.today)();
 }
 function commit() { save(); render(); }
+let renderPending = false;
+function renderWhenIdle() {
+  const a = document.activeElement;
+  if (a && a.closest('#main') && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) renderPending = true;
+  else render();
+}
+document.addEventListener('focusout', () => { if (renderPending) { renderPending = false; setTimeout(render, 0); } });
 const findIn = (path, id) => getPath(path).find(x => x.id === id);
 
 /* ---------- events ---------- */
@@ -705,6 +800,34 @@ function toggleTheme() {
 try { const th = localStorage.getItem(KEY + '.theme'); if (th) document.documentElement.dataset.theme = th; } catch (e) { /* ignore */ }
 
 render();
+
+// On claude.ai the page keeps its state in the account (synced across devices) and
+// receives the FBA board summary; opened as a plain file it stays on localStorage.
+(async () => {
+  const db = await window.claude?.use?.('db') ?? null;
+  const user = db && await window.claude.use('user');
+  const id = user && await user.id();
+  if (!id) return;
+  const base = 'data/users/' + id;
+  try {
+    const snap = await db.doc(base + '/lifeState').get();
+    stateRef = db.doc(base + '/lifeState');
+    if (snap.exists) {
+      const tab = state.tab;
+      state = migrate(deepMerge(defaultState(), JSON.parse(snap.data().json)));
+      state.tab = tab;
+    } else {
+      saveRemote();
+    }
+    document.getElementById('storageNote').textContent = 'claude.ai 계정에 저장돼요 (기기 간 동기화).';
+    document.querySelectorAll('[data-action="export"], #importFile').forEach(el => (el.closest('label') || el).hidden = true);
+    renderWhenIdle();
+  } catch (e) { /* keep localStorage */ }
+  db.doc(base + '/amazonSync').onSnapshot(s => {
+    amazonSync = s.exists ? s.data() : null;
+    renderWhenIdle();
+  }, () => {});
+})();
 </script>
 </body>
 </html>
