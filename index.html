@@ -303,6 +303,7 @@ function defaultState() {
   return {
     tab: 'today',
     tasks: [],
+    shopping: [],
     notes: {},
     career: {
       profile: { company: 'Cheil Worldwide UK (RHQ · 30개 법인)', role: 'IT Finance & Operations', since: '2026-06' },
@@ -555,6 +556,29 @@ function cfaStats() {
   return { mins, weekMins, days, weeksLeft, needWeekMins: weeksLeft ? remaining / weeksLeft : null, plannedMins };
 }
 
+/* ---------- shopping ---------- */
+const STORES = ['H Mart', 'Tesco', "Sainsbury's", 'Waitrose', 'Lidl', '온라인'];
+function shoppingCard() {
+  const items = state.shopping, open = items.filter(x => !x.done), done = items.length - open.length;
+  const stores = [...new Set(items.map(x => x.store || '기타'))];
+  return `<div class="card">
+    <h2>🛒 장보기 <span class="small muted">${open.length}개 남음</span></h2>
+    ${items.length ? stores.map(st => `<div class="small muted" style="margin-top:6px"><b>${esc(st)}</b></div>
+      <ul class="list" style="margin-top:0">${items.filter(x => (x.store || '기타') === st).map(x => `<li class="${x.done ? 'done' : ''}">
+        <input type="checkbox" data-action="toggle-step" data-path="shopping" data-id="${x.id}" ${x.done ? 'checked' : ''}>
+        <span class="t">${esc(x.title)}</span>
+        <button class="icon" data-action="del-item" data-path="shopping" data-id="${x.id}">✕</button></li>`).join('')}</ul>`).join('')
+      : '<div class="empty">비어 있음</div>'}
+    <form class="row" data-form="shop" style="margin-top:8px">
+      <input class="grow" name="title" placeholder="살 것 (쉼표로 여러 개)" required>
+      <input name="store" list="storeList" placeholder="가게" style="width:100px" value="${esc(stores[0] || 'H Mart')}">
+      <datalist id="storeList">${STORES.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
+      <button class="btn primary">추가</button>
+    </form>
+    ${done ? `<button class="btn" data-action="clear-shopping" style="margin-top:8px">산 것 ${done}개 지우기</button>` : ''}
+  </div>`;
+}
+
 /* ---------- schedule ---------- */
 const todayIdx = () => (new Date().getDay() + 6) % 7;
 function todaysBlocks() {
@@ -798,6 +822,7 @@ const VIEWS = {
       </div>
       <div class="grid" style="margin-top:12px">
         ${scheduleCard()}
+        ${shoppingCard()}
         <div class="card">
           <h2>오늘 집중할 ${FOCUS_LIMIT}가지</h2>
           <div class="small muted">전부 다 하려고 하지 말고, 각 탭에서 ☆ 를 눌러 최대 ${FOCUS_LIMIT}개만 고르세요.</div>
@@ -1206,6 +1231,7 @@ document.addEventListener('click', e => {
       if (!confirm('삭제할까요?')) return;
       const arr = getPath(path); arr.splice(arr.findIndex(x => x.id === id), 1); break;
     }
+    case 'clear-shopping': state.shopping = state.shopping.filter(x => !x.done); break;
     case 'invest-done': {
       const mo = el.dataset.month, d = state.invest.done;
       d[mo] ? delete d[mo] : (d[mo] = Number(state.invest.monthly) || 0);
@@ -1241,6 +1267,9 @@ document.addEventListener('submit', e => {
     case 'goal': state.career.goals.push({ id: uid(), title: v.title.trim(), progress: 0 }); break;
     case 'ledger': state.amazon.ledger.push({ id: uid(), date: v.date, type: v.type, amount: Number(v.amount), memo: v.memo.trim() }); break;
     case 'event': state.kids.events.push({ id: uid(), date: v.date, time: v.time, title: v.title.trim() }); break;
+    case 'shop':
+      for (const t of v.title.split(',').map(x => x.trim()).filter(Boolean)) state.shopping.push({ id: uid(), title: t, store: v.store.trim() || '기타', done: false });
+      break;
     case 'school': state.kids.schools.push({ id: uid(), name: v.name.trim(), kind: '', entry: '', how: '', action: '조사', url: '', status: '조사' }); break;
     case 'win': state.career.wins.push({ id: uid(), date: v.date, text: v.text.trim() }); break;
     case 'cfa-log': state.career.cfa.log.push({ id: uid(), date: v.date, minutes: Number(v.minutes), topic: v.topic }); break;
