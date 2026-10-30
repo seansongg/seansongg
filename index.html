@@ -243,8 +243,9 @@ const KID_MILESTONES = [
   ['2026-11-30', 'Tax-Free Childcare 쓰고 있는지 확인', '£8 넣으면 정부가 £2 더해줌 (연 최대 £2,000) — 너서리 비용에 사용'],
   ['2026-12-15', '도서관 Rhyme Time · Bookstart 등록 (무료)', 'Kingston 도서관 주간 프로그램 — 매주 가면 말·책 습관에 제일 효과 좋음'],
   ['2027-01-15', '수영 레슨 (카운슬 수영장 parent & toddler)', '사설보다 저렴'],
-  ['2027-01-31', '집 기준 공립 초등 2~3곳 정하기', "Kingston 카운슬 \"last distance offered\"로 실제 배정 가능성 확인: Christ Church CofE (KT5), Lime Tree, St Matthew's CofE 등"],
-  ['2027-02-28', '후보 학교 Ofsted 리포트 읽기', 'Good/Outstanding + 최근 점검일 확인'],
+  ['2027-01-31', '학교별 "지난해 마지막 배정 거리" 자료 받기', 'Kingston 입학 담당(Achieving for Children)의 National Offer Day 배정 자료 — 집(KT5 8SF)에서 각 학교까지 거리와 비교'],
+  ['2027-02-28', '후보 학교 비교: 최신 Ofsted 리포트 + KS2 SATs 결과', 'GOV.UK "Compare school performance"에서 Year 6 성적 확인. 등급 사이트마다 달라서 원본으로'],
+  ['2027-03-31', '1지망 ~ 안전 지망 순서 초안', '좋은 학교부터 쓰되, 거리 안에 확실히 드는 학교를 하나는 꼭 넣기'],
   ['2027-03-01', 'CofE 학교 신앙 기준 확인 → 교회 출석할지 결정', '기준에 출석 기간(보통 1~2년)이 있으면 지금부터 해당'],
   ['2027-03-01', '뉴몰든 한글학교 문의·대기 등록', '대기자 있음 — 입학 가능 나이 확인'],
   ['2027-09-01', '공립 초등 부설 너서리반 확인 (2028년 9월)', '무료 시간으로 다닐 수 있고 그 학교에 익숙해짐 (Reception 배정 우선권은 보통 없음)'],
@@ -257,11 +258,13 @@ const KID_MILESTONES = [
   ['2033-09-01', '11+ 준비 여부 결정 (Year 4)', 'Tiffin 등 그래머스쿨은 무료 — 기출·문제집 위주로 저비용 준비 가능'],
   ['2035-06-01', '11+ 등록 (Tiffin 등) — Year 5 여름', '사립 중학교는 학비 지원(bursary)도 이때 확인'],
 ];
-// School shortlist (state route). Facts from directories as of Oct 2026 — confirm with each school.
+// School shortlist (state route) near home (KT5 8SF). Ratings differ between directories and
+// Ofsted no longer gives single-word grades for new inspections — check the latest report.
 const KID_SCHOOLS = [
-  ['Christ Church CofE Primary', 'Surbiton KT5 · 공립 (Good)', 'Reception (2029.9)', '카운슬 배정 — 거리 · 신앙 기준 확인', '배정 거리 · 신앙 기준 확인', ''],
-  ['Lime Tree Primary', 'Surbiton KT6 · 공립 (Good)', 'Reception (2029.9)', '카운슬 배정 — 거리 기준', '배정 거리 확인', ''],
-  ["St Matthew's CofE Primary", 'Surbiton KT6 · 공립', 'Reception (2029.9)', '카운슬 배정 — 거리 · 신앙 기준 확인', 'Ofsted · 배정 거리 확인', ''],
+  ['Christ Church CofE Primary', 'KT5 8LJ · 공립 CofE (Good) · 집과 같은 우편번호 구역', 'Reception (2029.9)', '거리 + 신앙 기준 — 일반(거리) 자리가 몇 개인지 확인', '배정 기준 · 지난해 마지막 거리 확인', ''],
+  ['Grand Avenue Primary & Nursery', 'KT5 9HU · 공립 (Good, 2021) · 학생 약 670명, 너서리반 있음', '너서리반 (2028.9) → Reception', '거리 기준 · 큰 학교라 자리가 많은 편', '너서리반 무료 시간 · 지난해 마지막 거리 확인', 'https://reports.ofsted.gov.uk/provider/ELS/102580'],
+  ['Knollmead Primary', 'KT5 9QP · 공립 아카데미 (일부 자료 Outstanding)', 'Reception (2029.9)', '아카데미 자체 배정 기준 확인', '최신 Ofsted · 거리 확인', ''],
+  ['Tolworth Infant & Nursery → Tolworth Junior', 'KT6 7SA · 공립 (일부 자료 Outstanding)', '너서리반 → Reception → Junior', '인펀트 → 주니어 연계', '최신 Ofsted · 거리 확인', ''],
   ['Tiffin School', 'Kingston · 공립 그래머 (무료)', '11+ (2036.9)', '11+ 시험 선발', '2033년쯤 준비 여부 결정', ''],
 ];
 const SCHOOL_STATUS = ['조사', '오픈데이 예약', '방문함', '등록함', '오퍼', '수락', '제외'];
