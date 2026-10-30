@@ -8,21 +8,21 @@
 :root {
   --bg: #f6f5f2; --surface: #ffffff; --surface-2: #f0eee9; --text: #1d1d1b; --muted: #6b6a66;
   --border: #e2dfd8; --accent: #2f6fdb; --accent-soft: #e6eefc; --danger: #c43d3d; --ok: #2e8b57;
-  --career: #5b5bd6; --amazon: #d9822b; --kids: #d6409f; --fitness: #2e8b57; --house: #2f8f9d;
+  --career: #5b5bd6; --amazon: #d9822b; --kids: #d6409f; --fitness: #2e8b57; --house: #2f8f9d; --invest: #a07a12;
   --radius: 12px; --shadow: 0 1px 2px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.04);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #141413; --surface: #1e1e1c; --surface-2: #262624; --text: #ecebe7; --muted: #9b9a95;
     --border: #34332f; --accent: #6b9cf0; --accent-soft: #23304a; --danger: #e06c6c; --ok: #4fbf82;
-    --career: #8f8ff0; --amazon: #eba25a; --kids: #ea78c0; --fitness: #4fbf82; --house: #5ab8c6;
+    --career: #8f8ff0; --amazon: #eba25a; --kids: #ea78c0; --fitness: #4fbf82; --house: #5ab8c6; --invest: #d9b54a;
     --shadow: none;
   }
 }
 :root[data-theme="dark"] {
   --bg: #141413; --surface: #1e1e1c; --surface-2: #262624; --text: #ecebe7; --muted: #9b9a95;
   --border: #34332f; --accent: #6b9cf0; --accent-soft: #23304a; --danger: #e06c6c; --ok: #4fbf82;
-  --career: #8f8ff0; --amazon: #eba25a; --kids: #ea78c0; --fitness: #4fbf82; --house: #5ab8c6;
+  --career: #8f8ff0; --amazon: #eba25a; --kids: #ea78c0; --fitness: #4fbf82; --house: #5ab8c6; --invest: #d9b54a;
   --shadow: none;
 }
 * { box-sizing: border-box; }
@@ -132,6 +132,7 @@ const AREAS = {
   kids:    { label: '육아',     icon: '👶' },
   fitness: { label: '운동',     icon: '🏃' },
   house:   { label: '집 관리',  icon: '🏠' },
+  invest:  { label: '투자',     icon: '💰' },
 };
 const TABS = { today: { label: '오늘', icon: '☀️' }, ...AREAS };
 const FOCUS_LIMIT = 3;
@@ -270,6 +271,11 @@ const KID_SCHOOLS = [
   ['Lime Tree Primary', 'Surbiton KT6 · 공립 (Good)', 'Reception (2029.9)', '카운슬 배정 — 거리 기준', '배정 거리 확인', ''],
 ];
 const SCHOOL_STATUS = ['조사', '오픈데이 예약', '방문함', '등록함', '오퍼', '수락', '제외'];
+// Monthly ISA plan. `sync` links an asset to its row in the Strategy Lab summary.
+const INVEST_ASSETS = [
+  ['나스닥 100', 'QQQ', 45, 'qqq'], ['코스피', 'KOSPI', 35, 'kospi'], ['금', 'Gold', 10, 'gold'], ['AI 전력 인프라', 'GRID', 10, 'grid'],
+];
+const ISA_ALLOWANCE = 20000;
 const PRODUCT_STAGES = ['아이디어', '리서치', '샘플', '발주', '입고중', '판매중', '보류'];
 const CANDIDATE_STAGES = ['문의', '쇼잉 예정', '쇼잉 완료', '심사중', '승인', '계약 완료', '탈락'];
 
@@ -318,6 +324,11 @@ function defaultState() {
       prepared: {},
       milestones: KID_MILESTONES.map(([date, title, note]) => ({ id: uid(), date, title, note, done: false })),
       schools: KID_SCHOOLS.map(([name, kind, entry, how, action, url]) => ({ id: uid(), name, kind, entry, how, action, url, status: '조사' })),
+    },
+    invest: {
+      monthly: 1000, account: 'Trading 212 ISA',
+      assets: INVEST_ASSETS.map(([name, proxy, target, sync]) => ({ id: uid(), name, proxy, target, sync, t212: '', value: '' })),
+      done: {},
     },
     fitness: { log: {}, goalPerWeek: 2, minimum: '집 10분 (R)', gym: { name: 'Nuffield Health Surbiton', fee: 120 } },
     house: {
@@ -652,6 +663,44 @@ function childAge() {
   return `${Math.floor(months / 12)}살 ${months % 12}개월`;
 }
 
+/* ---------- investing ---------- */
+/* Strategy Lab summary, written by Claude into data/users/<id>/investSync:
+   { updatedAt, dataAsOf, sourceUrl, assets:[{id,name,target,close,pct200,rsi,dd52,ret1m,deepDip}],
+     risk:[{name,value,state,note}], signals:[{group,name,detail}] } */
+let investSync = null;
+const lastDayOfMonth = () => { const n = new Date(); return fmt(new Date(n.getFullYear(), n.getMonth() + 1, 0)); };
+const prevMonth = () => { const n = new Date(); return fmt(new Date(n.getFullYear(), n.getMonth() - 1, 1)).slice(0, 7); };
+// Split this month's money so holdings move toward target weights (never sells).
+function investPlan() {
+  const inv = state.invest, C = Number(inv.monthly) || 0;
+  const vals = inv.assets.map(a => Number(a.value) || 0), have = vals.reduce((x, y) => x + y, 0);
+  const tsum = inv.assets.reduce((x, a) => x + (Number(a.target) || 0), 0) || 1;
+  const T = have + C;
+  let need = inv.assets.map((a, i) => Math.max(0, (Number(a.target) || 0) / tsum * T - vals[i]));
+  const ns = need.reduce((x, y) => x + y, 0);
+  need = ns ? need.map(n => n / ns * C) : inv.assets.map(a => (Number(a.target) || 0) / tsum * C);
+  return inv.assets.map((a, i) => ({ a, buy: Math.round(need[i]), weight: have ? vals[i] / have : null, target: (Number(a.target) || 0) / tsum }));
+}
+// UK tax year runs 6 Apr – 5 Apr; a month-end buy counts in its month.
+function isaThisYear() {
+  const n = new Date(), y = n.getMonth() >= 3 && !(n.getMonth() === 3 && n.getDate() < 6) ? n.getFullYear() : n.getFullYear() - 1;
+  const from = `${y}-04`, to = `${y + 1}-03`;
+  return Object.entries(state.invest.done).filter(([m, v]) => v && m >= from && m <= to).reduce((s, [, v]) => s + (Number(v) || 0), 0);
+}
+function investReminder() {
+  const inv = state.invest, m = thisMonth(), last = lastDayOfMonth();
+  const due = !inv.done[m] && daysUntil(last) <= 2;
+  const missed = !inv.done[prevMonth()] && new Date().getDate() <= 5;
+  if (!due && !missed) return '';
+  const month = due ? m : prevMonth();
+  const split = investPlan().map(x => `${esc(x.a.proxy)} £${x.buy}`).join(' · ');
+  return `<li><input type="checkbox" data-action="invest-done" data-month="${month}" title="매수 완료">
+    <span class="dot" style="${areaVar('invest')}"></span>
+    <span class="t">ISA £${esc(inv.monthly)} 매수${due ? '' : ' (지난달)'}<span class="small muted" style="display:block">${split}</span></span>
+    <span class="tag${due ? '' : ' late'}">${due ? dday(daysUntil(last)) : '놓침'}</span></li>`;
+}
+const pctTxt = (x, d = 1) => x == null || x === '' ? '—' : `${x > 0 ? '+' : ''}${(x * 100).toFixed(d)}%`;
+
 /* ---------- amazon sync ---------- */
 const syncPct = () => { const p = amazonSync?.progress; return p && p.total ? Math.round(p.done / p.total * 100) : 0; };
 // FBA deadlines that are past or within the next 7 days.
@@ -747,6 +796,8 @@ const VIEWS = {
         ${card('house', `월세 ${hs.paid}/${hs.count} 입금`, hs.nextDue
           ? `다음: ${esc(hs.nextDue.t.name)} ${shortDate(hs.nextDue.due)} ${money(hs.nextDue.t.rent)}`
           : `3번째 테넌트 준비 ${hs.stepsDone}/${hs.stepsTotal}`)}
+        ${card('invest', state.invest.done[thisMonth()] ? '이번 달 매수 ✓' : `ISA 매수 ${dday(daysUntil(lastDayOfMonth()))}`,
+          investSync ? `리스크 경고 ${investSync.risk.filter(x => x.state === '경고').length}개 · 주의 ${investSync.risk.filter(x => x.state === '주의').length}개` : `올해 ISA £${isaThisYear().toLocaleString('en-GB')}`)}
       </div>
       <div class="grid" style="margin-top:12px">
         ${scheduleCard()}
@@ -770,8 +821,8 @@ const VIEWS = {
       </div>
       <div class="card" style="margin-top:12px">
         <h2>리마인더 · 곧 마감</h2>
-        ${urgent.length || rent.length || fbaDeadlines.length || evRem.length || msRem.length || winReminder() || workoutReminder()
-          ? `<ul class="list">${evRem.map(x => eventItem(x, true)).join('')}${workoutReminder()}${winReminder()}${rent.map(rentAlertItem).join('')}${msRem.map(m => milestoneItem(m, true)).join('')}${fbaDeadlines.map(deadlineItem).join('')}${urgent.map(t => taskItem(t, true)).join('')}</ul>`
+        ${urgent.length || rent.length || fbaDeadlines.length || evRem.length || msRem.length || winReminder() || workoutReminder() || investReminder()
+          ? `<ul class="list">${evRem.map(x => eventItem(x, true)).join('')}${investReminder()}${workoutReminder()}${winReminder()}${rent.map(rentAlertItem).join('')}${msRem.map(m => milestoneItem(m, true)).join('')}${fbaDeadlines.map(deadlineItem).join('')}${urgent.map(t => taskItem(t, true)).join('')}</ul>`
           : '<div class="empty">없음 👍</div>'}
       </div>`;
   },
@@ -1066,6 +1117,56 @@ const VIEWS = {
       </div>
     </div>`;
   },
+
+  invest() {
+    const inv = state.invest, m = thisMonth(), plan = investPlan(), A = 'invest.assets', S = investSync;
+    const have = inv.assets.reduce((x, a) => x + (Number(a.value) || 0), 0), used = isaThisYear();
+    return `<div class="grid">
+      <div class="stack">
+        <div class="card" style="border-left:4px solid var(--invest)">
+          <div class="row" style="justify-content:space-between"><h3 style="margin:0">💰 ${esc(inv.account)} · 매월 말일 £${esc(inv.monthly)}</h3>
+            <label class="row small"><input type="checkbox" data-action="invest-done" data-month="${m}" ${inv.done[m] ? 'checked' : ''}> ${m.slice(5)}월 매수 완료</label></div>
+          <div class="small muted">이번 달 말일 ${shortDate(lastDayOfMonth())} (${dday(daysUntil(lastDayOfMonth()))}) · 2일 전부터 오늘 탭에 떠요</div>
+          <ul class="list" style="margin-top:8px">${plan.map(({ a, buy, weight, target }) => `<li style="flex-wrap:wrap">
+            <span class="t"><b>${esc(a.name)}</b> <span class="small muted">${esc(a.proxy)} · 목표 ${Math.round(target * 100)}%${weight == null ? '' : ` · 현재 <span class="${Math.abs(weight - target) > 0.05 ? 'neg' : ''}">${Math.round(weight * 100)}%</span>`}</span></span>
+            <b style="font-size:16px">£${buy}</b>
+            <div class="row small" style="width:100%">
+              <label class="row" style="gap:3px">목표 ${editInput(A, a, 'target', 'number', 'min="0" max="100" style="width:56px"')}%</label>
+              <label class="row" style="gap:3px">종목 ${editInput(A, a, 't212', 'text', 'placeholder="예: EQQQ" style="width:80px"')}</label>
+              <label class="row" style="gap:3px">평가액 £${editInput(A, a, 'value', 'number', 'min="0" placeholder="0" style="width:80px"')}</label>
+            </div></li>`).join('')}</ul>
+          <div class="hint">평가액을 넣으면 목표보다 모자란 자산에 더 넣도록 이번 달 매수액을 나눠요 (팔지 않고 새 돈으로 리밸런싱). 비워두면 목표 비율대로 나눠요. 영국 ISA에서는 미국 상장 ETF(QQQ 등)를 보통 살 수 없어 UCITS 대체 종목을 쓰니, 실제 종목명을 적어 두세요.</div>
+          <div class="stat" style="margin-top:8px"><span>평가액 합계</span><b>${have ? money(have) : '—'}</b></div>
+          <div class="stat"><span>올해 ISA 납입 (4/6~)</span><b>${money(used)} / ${money(ISA_ALLOWANCE)}</b></div>
+          ${bar(Math.min(100, pct(used, ISA_ALLOWANCE)), 'invest')}
+          <label class="row small" style="margin-top:6px">월 적립액 £<input type="number" min="0" data-setting="invest.monthly" value="${esc(inv.monthly)}"></label>
+        </div>
+        ${notesPanel('invest', '투자 원칙, 리밸런싱 기준, 매수 기록 메모…')}
+      </div>
+      <div class="stack">
+        ${S ? `<div class="card">
+          <div class="row" style="justify-content:space-between"><h3 style="margin:0">시장 상태</h3>
+            <a class="small" href="${esc(S.sourceUrl)}" target="_blank" rel="noopener">Strategy Lab ↗</a></div>
+          <div class="small muted">거래봇 데이터 ${esc(S.dataAsOf || '')} 기준 · 동기화 ${S.updatedAt ? ago(S.updatedAt) : ''}</div>
+          <div class="scroll-x" style="margin-top:8px"><table class="table" style="min-width:420px">
+            <tr><th>자산</th><th>200일선 대비</th><th>RSI</th><th>52주 고점 대비</th><th>1개월</th></tr>
+            ${S.assets.map(x => `<tr><td>${esc(x.name)}${x.deepDip ? ' <span class="tag late">깊은 눌림</span>' : ''}</td>
+              <td class="${x.pct200 < 0 ? 'neg' : 'pos'}">${pctTxt(x.pct200)}</td><td>${x.rsi ?? '—'}</td>
+              <td class="${x.dd52 < -0.2 ? 'neg' : ''}">${pctTxt(x.dd52)}</td><td>${pctTxt(x.ret1m)}</td></tr>`).join('')}
+          </table></div>
+        </div>
+        <div class="card"><h3>리스크 지표</h3>
+          <ul class="list">${S.risk.map(x => `<li style="align-items:flex-start"><span class="tag${x.state === '경고' ? ' late' : ''}">${esc(x.state)}</span>
+            <span class="t">${esc(x.name)} <b>${esc(x.value)}</b><span class="small muted" style="display:block">${esc(x.note)}</span></span></li>`).join('')}</ul>
+        </div>
+        <div class="card"><h3>켜진 신호 <span class="small muted">조건 기록, 투자 권유 아님</span></h3>
+          ${S.signals.length ? `<ul class="list">${S.signals.map(x => `<li style="align-items:flex-start"><span class="dot" style="${areaVar('invest')};margin-top:7px"></span>
+            <span class="t">${esc(x.name)}<span class="small muted" style="display:block">${esc(x.group)} · ${esc(x.detail)}</span></span></li>`).join('')}</ul>` : '<div class="empty">없음</div>'}
+        </div>` : '<div class="card"><h3>시장 상태</h3><div class="empty">Strategy Lab 동기화 대기 중</div></div>'}
+        ${taskPanel('invest')}
+      </div>
+    </div>`;
+  },
 };
 
 /* ---------- render ---------- */
@@ -1107,6 +1208,11 @@ document.addEventListener('click', e => {
     case 'del-item': {
       if (!confirm('삭제할까요?')) return;
       const arr = getPath(path); arr.splice(arr.findIndex(x => x.id === id), 1); break;
+    }
+    case 'invest-done': {
+      const mo = el.dataset.month, d = state.invest.done;
+      d[mo] ? delete d[mo] : (d[mo] = Number(state.invest.monthly) || 0);
+      break;
     }
     case 'workout-r': { const r = el.dataset.r; state.fitness.log[today()] === r ? delete state.fitness.log[today()] : (state.fitness.log[today()] = r); break; }
     case 'workout': { const d = el.dataset.date; state.fitness.log[d] = !state.fitness.log[d]; if (!state.fitness.log[d]) delete state.fitness.log[d]; break; }
@@ -1238,6 +1344,10 @@ render();
     document.querySelectorAll('[data-action="export"], #importFile').forEach(el => (el.closest('label') || el).hidden = true);
     renderWhenIdle();
   } catch (e) { /* keep localStorage */ }
+  db.doc(base + '/investSync').onSnapshot(s => {
+    investSync = s.exists ? s.data() : null;
+    renderWhenIdle();
+  }, () => {});
   db.doc(base + '/amazonSync').onSnapshot(s => {
     amazonSync = s.exists ? s.data() : null;
     renderWhenIdle();
