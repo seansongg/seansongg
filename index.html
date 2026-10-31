@@ -714,7 +714,20 @@ function childAge() {
    { updatedAt, dataAsOf, sourceUrl, assets:[{id,name,target,close,pct200,rsi,dd52,ret1m,deepDip}],
      risk:[{name,value,state,note}], signals:[{group,name,detail}] } */
 let investSync = null;
-const lastDayOfMonth = () => { const n = new Date(); return fmt(new Date(n.getFullYear(), n.getMonth() + 1, 0)); };
+// England & Wales bank holidays that can fall at a month end (Easter, last-Monday holidays, Christmas, New Year).
+function ukHolidays(y) {
+  const lastMon = m => { const d = new Date(y, m + 1, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return fmt(d); };
+  const sub = (m, day) => { const d = new Date(y, m, day), w = d.getDay(); return fmt(addDays(d, w === 6 ? 2 : w === 0 ? 1 : 0)); };
+  const xmas = new Date(y, 11, 25).getDay();
+  return new Set([sub(0, 1), fmt(addDays(easter(y), -2)), fmt(addDays(easter(y), 1)), lastMon(4), lastMon(7),
+    fmt(addDays(new Date(y, 11, 25), xmas === 6 ? 2 : xmas === 0 ? 1 : 0)), fmt(addDays(new Date(y, 11, 26), xmas === 5 || xmas === 6 ? 2 : xmas === 0 ? 1 : 0))]);
+}
+// The ISA buy happens on the month's last working day.
+function lastWorkingDay(offset = 0) {
+  const n = new Date(), d = new Date(n.getFullYear(), n.getMonth() + 1 + offset, 0), hol = ukHolidays(d.getFullYear());
+  while (d.getDay() === 0 || d.getDay() === 6 || hol.has(fmt(d))) d.setDate(d.getDate() - 1);
+  return fmt(d);
+}
 const prevMonth = () => { const n = new Date(); return fmt(new Date(n.getFullYear(), n.getMonth() - 1, 1)).slice(0, 7); };
 // Split this month's money so holdings move toward target weights (never sells).
 function investPlan() {
@@ -734,7 +747,7 @@ function isaThisYear() {
   return Object.entries(state.invest.done).filter(([m, v]) => v && m >= from && m <= to).reduce((s, [, v]) => s + (Number(v) || 0), 0);
 }
 function investReminder() {
-  const inv = state.invest, m = thisMonth(), last = lastDayOfMonth();
+  const inv = state.invest, m = thisMonth(), last = lastWorkingDay();
   const due = !inv.done[m] && daysUntil(last) <= 2;
   const missed = !inv.done[prevMonth()] && new Date().getDate() <= 5;
   if (!due && !missed) return '';
@@ -743,7 +756,7 @@ function investReminder() {
   return `<li><input type="checkbox" data-action="invest-done" data-month="${month}" title="매수 완료">
     <span class="dot" style="${areaVar('invest')}"></span>
     <span class="t">ISA £${esc(inv.monthly)} 매수${due ? '' : ' (지난달)'}<span class="small muted" style="display:block">${split}</span></span>
-    <span class="tag${due ? '' : ' late'}">${due ? dday(daysUntil(last)) : '놓침'}</span></li>`;
+    <span class="tag${due && daysUntil(last) >= 0 ? '' : ' late'}">${!due ? '놓침' : daysUntil(last) < 0 ? `지남 · ${shortDate(last)}` : daysUntil(last) === 0 ? '오늘' : dday(daysUntil(last))}</span></li>`;
 }
 const pctTxt = (x, d = 1) => x == null || x === '' ? '—' : `${x > 0 ? '+' : ''}${(x * 100).toFixed(d)}%`;
 
@@ -843,7 +856,7 @@ const VIEWS = {
           ? `빈 방 ${vacancy().months}개월 · ${money(vacancy().lost)} 놓침`
           : hs.nextDue ? `다음: ${esc(hs.nextDue.t.name)} ${shortDate(hs.nextDue.due)} ${money(hs.nextDue.t.rent)}`
           : `3번째 테넌트 준비 ${hs.stepsDone}/${hs.stepsTotal}`)}
-        ${card('invest', state.invest.done[thisMonth()] ? '이번 달 매수 ✓' : `ISA 매수 ${dday(daysUntil(lastDayOfMonth()))}`,
+        ${card('invest', state.invest.done[thisMonth()] ? '이번 달 매수 ✓' : (daysUntil(lastWorkingDay()) < 0 ? 'ISA 매수 지남' : `ISA 매수 ${dday(daysUntil(lastWorkingDay()))}`),
           investSync ? `리스크 경고 ${investSync.risk.filter(x => x.state === '경고').length}개 · 주의 ${investSync.risk.filter(x => x.state === '주의').length}개` : `올해 ISA £${isaThisYear().toLocaleString('en-GB')}`)}
       </div>
       <div class="grid" style="margin-top:12px">
@@ -1205,9 +1218,9 @@ const VIEWS = {
     return `<div class="grid">
       <div class="stack">
         <div class="card" style="border-left:4px solid var(--invest)">
-          <div class="row" style="justify-content:space-between"><h3 style="margin:0">💰 ${esc(inv.account)} · 매월 말일 £${esc(inv.monthly)}</h3>
+          <div class="row" style="justify-content:space-between"><h3 style="margin:0">💰 ${esc(inv.account)} · 매월 마지막 영업일 £${esc(inv.monthly)}</h3>
             <label class="row small"><input type="checkbox" data-action="invest-done" data-month="${m}" ${inv.done[m] ? 'checked' : ''}> ${m.slice(5)}월 매수 완료</label></div>
-          <div class="small muted">이번 달 말일 ${shortDate(lastDayOfMonth())} (${dday(daysUntil(lastDayOfMonth()))}) · 2일 전부터 오늘 탭에 떠요</div>
+          <div class="small muted">이번 달 마지막 영업일 ${shortDate(lastWorkingDay())} (${daysUntil(lastWorkingDay()) < 0 ? '지남' : dday(daysUntil(lastWorkingDay()))}) · 2일 전부터 오늘 탭에 떠요 · 주말·공휴일 제외</div>
           <ul class="list" style="margin-top:8px">${plan.map(({ a, buy, weight, target }) => `<li style="flex-wrap:wrap">
             <span class="t"><b>${esc(a.name)}</b> <span class="small muted">${esc(a.proxy)} · 목표 ${Math.round(target * 100)}%${weight == null ? '' : ` · 현재 <span class="${Math.abs(weight - target) > 0.05 ? 'neg' : ''}">${Math.round(weight * 100)}%</span>`}</span></span>
             <b style="font-size:16px">£${buy}</b>
