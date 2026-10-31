@@ -853,7 +853,7 @@ const VIEWS = {
           : card('kids', ev ? esc(ev.title) : '일정 없음', ev ? `${ev.date === now ? '오늘' : shortDate(ev.date)} ${esc(ev.time || '')}` : '다가오는 일정 추가')}
         ${card('fitness', `이번 주 ${fs.week}/${fs.goal}`, state.fitness.log[now] ? '오늘 완료 ✓' : `최소: ${esc(state.fitness.minimum)}`)}
         ${card('house', `월세 ${hs.paid}/${hs.count} 입금`, vacancy()
-          ? `빈 방 ${vacancy().months}개월 · ${money(vacancy().lost)} 놓침`
+          ? `빈 방 ${vacancy().months}개월 · 후보 ${state.house.candidates.length}명`
           : hs.nextDue ? `다음: ${esc(hs.nextDue.t.name)} ${shortDate(hs.nextDue.due)} ${money(hs.nextDue.t.rent)}`
           : `3번째 테넌트 준비 ${hs.stepsDone}/${hs.stepsTotal}`)}
         ${card('invest', state.invest.done[thisMonth()] ? '이번 달 매수 ✓' : (daysUntil(lastWorkingDay()) < 0 ? 'ISA 매수 지남' : `ISA 매수 ${dday(daysUntil(lastWorkingDay()))}`),
@@ -1136,15 +1136,14 @@ const VIEWS = {
     const target = Number(state.house.targetRent) || 0, H = state.house;
     const vac = vacancy(), nextStep = H.steps.find(x => !x.done);
     const cl = H.cleaning, clMonth = cleaningMonthly();
-    return `<div class="card" style="border-left:4px solid var(--danger);margin-bottom:12px">
-        <div class="row" style="justify-content:space-between"><h3 style="margin:0">🚪 빈 방 채우기 — 급함</h3>
+    return `<div class="card" style="border-left:4px solid var(--house);margin-bottom:12px">
+        <div class="row" style="justify-content:space-between"><h3 style="margin:0">🚪 빈 방 채우기 — 서두르지 않고 좋은 사람으로</h3>
           <span class="small muted">후보 ${H.candidates.length}명${H.candidates.length ? ` · 심사 완료 ${H.candidates.filter(c => SCREEN_CHECKS.every((_, i) => c.checks?.[i])).length}명` : ''}</span></div>
         <div class="row small" style="margin-top:8px">
           <label class="row" style="gap:4px">비어 있던 달 <input type="month" data-setting="house.vacantSince" value="${esc(H.vacantSince)}"></label>
           <label class="row" style="gap:4px">목표 월세 £<input type="number" data-setting="house.targetRent" value="${esc(H.targetRent)}"></label>
         </div>
-        ${vac ? `<div class="stat" style="margin-top:8px"><span>지금까지 놓친 월세 (${vac.months}개월)</span><b class="neg" style="font-size:18px">${money(vac.lost)}</b></div>`
-          : '<div class="hint">언제부터 비었는지 넣으면 놓친 월세를 계산해요.</div>'}
+        ${vac ? `<div class="stat small muted" style="margin-top:8px"><span>비어 있던 기간 ${vac.months}개월 · 그동안 월세 기준</span><b>${money(vac.lost)}</b></div>` : ''}
         <div class="small muted">Surbiton 일반 더블룸 시세 약 £800~850 (SpareRoom 매물 기준, 빌 별도) · 다음 단계: <b>${esc(nextStep?.title || '모두 완료')}</b></div>
       </div>
       <div class="grid">
