@@ -917,7 +917,7 @@ const VIEWS = {
           <form class="row" data-form="cfa-log" style="margin-top:10px">
             <input type="date" name="date" value="${now}" required>
             <select name="minutes">${[25, 30, 45, 60, 90, 120].map(m => `<option value="${m}"${m === 60 ? ' selected' : ''}>${m}분</option>`).join('')}</select>
-            <select name="topic" class="grow">${c.topics.map(t => `<option>${esc(t.name)}</option>`).join('')}<option>모의고사</option><option>복습</option></select>
+            <select name="topic" class="grow">${c.topics.map(t => `<option>${esc(t.name)}</option>`).join('')}<option>Schweser 문제풀이</option><option>모의고사</option><option>복습·오답정리</option></select>
             <button class="btn primary">기록</button>
           </form>
           ${logs.length ? `<ul class="list">${logs.map(l => `<li><span class="tag">${shortDate(l.date)}</span><span class="t">${esc(l.topic)}</span>
