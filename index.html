@@ -608,6 +608,25 @@ function shoppingCard() {
   </div>`;
 }
 
+/* ---------- CFA check-in: nags harder the longer nothing is logged ---------- */
+function cfaNagItem() {
+  const c = state.career.cfa, cs = cfaStats(), start = c.startDate || '2026-11-02', now = today();
+  if (!c.examDate || now < start) return '';
+  const last = c.log.length ? c.log.map(l => l.date).sort().pop() : null;
+  const n = last ? -daysUntil(last) : -daysUntil(start);
+  const left = cs.days;
+  const week = `이번 주 ${hrs(cs.weekMins)}h / 계획 ${hrs(cs.plannedMins)}h`;
+  let msg = '', level = 0;
+  if (n >= 7) { level = 3; msg = `🔴 ${last ? n + '일째' : '시작하고 ' + n + '일째'} 공부 기록 0. 시험까지 ${left}일인데 이러면 안 돼요. 지금 이패스 틀고 25분만 해요. 오늘 안 하면 6개월 전과 똑같아요.`; }
+  else if (n >= 5) { level = 2; msg = `🔴 ${n}일째 공부 안 했어요. 이패스를 6개월 동안 한 번도 안 열었던 패턴이 또 나오고 있어요. ${week}. 지금 강의 하나만 틀어요.`; }
+  else if (n >= 3) { level = 1; msg = `🟠 ${n}일째 공부 기록이 없어요. ${week}. 오늘 25분이라도 하고 기록하세요.`; }
+  else if (todayIdx() >= 3 && cs.plannedMins && cs.weekMins < cs.plannedMins * 0.4) { level = 1; msg = `🟠 이번 주 반 넘게 지났는데 ${week}예요. 오늘 재택 낮 블록 꼭 지키기.`; }
+  if (!msg) return '';
+  return `<li><span style="width:18px"></span><span class="dot" style="${areaVar('career')}"></span>
+    <span class="t" data-action="go" data-tab="career" style="cursor:pointer">📘 CFA 체크인<span class="small" style="display:block">${esc(msg)}</span></span>
+    <span class="tag late">${level >= 2 ? '혼남' : '경고'}</span></li>`;
+}
+
 /* ---------- schedule ---------- */
 const todayIdx = () => (new Date().getDay() + 6) % 7;
 function todaysBlocks() {
@@ -886,8 +905,8 @@ const VIEWS = {
       </div>
       <div class="card" style="margin-top:12px">
         <h2>리마인더 · 곧 마감</h2>
-        ${urgent.length || rent.length || fbaDeadlines.length || evRem.length || msRem.length || winReminder() || workoutReminder() || investReminder()
-          ? `<ul class="list">${evRem.map(x => eventItem(x, true)).join('')}${investReminder()}${workoutReminder()}${winReminder()}${rent.map(rentAlertItem).join('')}${msRem.map(m => milestoneItem(m, true)).join('')}${fbaDeadlines.map(deadlineItem).join('')}${urgent.map(t => taskItem(t, true)).join('')}</ul>`
+        ${urgent.length || rent.length || fbaDeadlines.length || evRem.length || msRem.length || winReminder() || workoutReminder() || investReminder() || cfaNagItem()
+          ? `<ul class="list">${evRem.map(x => eventItem(x, true)).join('')}${cfaNagItem()}${investReminder()}${workoutReminder()}${winReminder()}${rent.map(rentAlertItem).join('')}${msRem.map(m => milestoneItem(m, true)).join('')}${fbaDeadlines.map(deadlineItem).join('')}${urgent.map(t => taskItem(t, true)).join('')}</ul>`
           : '<div class="empty">없음 👍</div>'}
       </div>`;
   },
