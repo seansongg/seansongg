@@ -325,7 +325,7 @@ function defaultState() {
     amazon: { steps: steps(AMAZON_STEPS), products: [], ledger: [] },
     kids: {
       events: [],
-      child: { name: '민우', dob: '2024-10-17', nursery: 'Aspire Nursery (Surbiton)' },
+      child: { name: '민우', dob: '2024-10-17', nursery: 'Aspire Nursery (Surbiton)', allergies: ['계란'] },
       annual: ANNUAL_EVENTS.map(([title, rule, lead, note]) => ({ id: uid(), title, rule, lead, note })),
       prepared: {},
       milestones: KID_MILESTONES.map(([date, title, note]) => ({ id: uid(), date, title, note, done: false })),
@@ -1032,7 +1032,8 @@ const VIEWS = {
     const ch = state.kids.child, annual = upcomingAnnual();
     const ms = [...state.kids.milestones].sort((a, b) => a.done - b.done || a.date.localeCompare(b.date));
     return `<div class="card" style="border-left:4px solid var(--kids);margin-bottom:12px">
-        <div class="row" style="justify-content:space-between"><h3 style="margin:0">👶 ${esc(ch.name)} · ${childAge()}</h3><span class="small muted">${esc(ch.nursery)}</span></div>
+        <div class="row" style="justify-content:space-between"><h3 style="margin:0">👶 ${esc(ch.name)} · ${childAge()}</h3><span class="small muted">${esc(ch.nursery)}</span>
+        ${(ch.allergies || []).length ? `<div class="small" style="width:100%"><span class="tag late">⚠️ 알레르기: ${esc(ch.allergies.join(', '))}</span> <span class="muted">음식 줄 때 마요네즈·빵·케이크·튀김옷도 확인</span></div>` : ''}</div>
       </div>
       <div class="grid">
       <div class="stack">
