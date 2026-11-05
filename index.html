@@ -291,6 +291,7 @@ const MOVE_MILESTONES = [
   ['2027-01-31', '이사 자금 통장 분리 + 매달 자동이체', '계약금은 2년 안에 쓸 돈이라 주식 ISA와 따로. Cash ISA · Easy access saver'],
   ['2027-02-28', '3-bed 후보 구역 좁히기 — 학교 배정 거리 안에서', '육아 탭 "지난해 마지막 배정 거리" 자료와 겹쳐 보기. 집 위치 = 학교 배정'],
   ['2027-03-31', 'Surbiton 3-bed 실거래가 조사 → 목표가 업데이트', 'Terrace vs semi, 정원, 역까지 거리별로 가격대 메모'],
+  ['2028-06-30', '결정: 영국에서 3-bed 사기 vs 해외 이동 전까지 렌트', '커리어 탭 입사 2년 · 승진 시점. 해외(2029~) 가능성이 크면 사지 말고 렌트 — 집 세 채 원격 관리 · 인지세 낭비 피하기'],
   ['2027-06-30', '모기지 브로커 상담 (부부 공동) — 차입 한도 · 계약금 · Colliers Wood를 어떻게 볼지', '입사 1년 리뷰 직후. Colliers Wood 대출·월세가 한도 계산에 들어가요'],
   ['2027-09-30', 'Colliers Wood 결정 — 계속 세 놓기 / 리모기지로 에퀴티 꺼내기 / 팔기', '고정 만료일과 맞추기. 팔면 양도세(CGT) 신고 60일 안에'],
   ['2027-12-31', '중간 점검 — 계약금 목표 대비 진행률', '모자라면 목표가 · LTV · 이사 시점 · Colliers Wood 활용 중 하나 조정'],
@@ -381,8 +382,8 @@ function defaultState() {
       candidates: [],
       // Numbers left blank are unknown — fill them in from the mortgage statement.
       // move.* = the Surbiton flat we live in (wife's, sold to move); move.cw = my Colliers Wood let.
-      move: { bought: 375000, value: 375000, balance: '', rate: '', fixEnd: '', target: 700000, ltv: 90, saved: 0, monthly: 0, income: '', moveBy: '2028-10-31', flatDrop: 5, houseDrop: 0,
-        cw: { bought: 375000, value: 375000, balance: '', fixEnd: '', plan: CW_PLANS[0], releaseLtv: 75 } },
+      move: { bought: 375000, value: 375000, balance: 325000, rate: '', fixEnd: '', target: 700000, ltv: 90, saved: 0, monthly: 0, income: 100000, moveBy: '2028-10-31', flatDrop: 5, houseDrop: 0,
+        cw: { bought: 375000, value: 375000, balance: 345000, fixEnd: '', plan: CW_PLANS[0], releaseLtv: 75 } },
       milestones: MOVE_MILESTONES.map(([date, title, note]) => ({ id: uid(), date, title, note, done: false })),
     },
   };
@@ -412,8 +413,13 @@ function migrate(s) {
   if (hm.length && hm.some(x => OLD_MOVE_TITLES.includes(x.title)) && hm.every(x => !x.done) && hm.every(x => MOVE_MILESTONES.some(m => m[0] === x.date) || OLD_MOVE_TITLES.includes(x.title))) {
     s.house.milestones = MOVE_MILESTONES.map(([date, title, note]) => ({ id: uid(), date, title, note, done: false }));
   }
+  // Known figures (Nov 2026): household income £100k+, equity ~£50k Surbiton / ~£30k Colliers Wood. Fill blanks only.
+  const mv = s.house.move;
+  if (!Number(mv.balance)) mv.balance = 325000;
+  if (!Number(mv.cw.balance)) mv.cw.balance = 345000;
+  if (!Number(mv.income)) mv.income = 100000;
   // Falling flat prices: list Surbiton earlier and add a plan B step to an existing roadmap (once).
-  if (!s.house.moveV || s.house.moveV < 3) {
+  if (!s.house.moveV || s.house.moveV < 4) {
     const L = s.house.milestones, find = t => L.find(x => x.title.startsWith(t));
     const list = find('Surbiton 플랫 내놓기'), prep = find('Surbiton 플랫 판매 준비');
     const nw = t => MOVE_MILESTONES.find(m => m[1].startsWith(t));
@@ -421,8 +427,9 @@ function migrate(s) {
       const [date, title, note] = nw(key);
       if (old && !old.done) Object.assign(old, { date, title, note });
     }
+    if (L.length && !find('결정: 영국에서')) { const [date, title, note] = nw('결정: 영국에서'); L.push({ id: uid(), date, title, note, done: false }); }
     if (L.length && !find('플랜 B')) { const [date, title, note] = nw('플랜 B'); L.push({ id: uid(), date, title, note, done: false }); }
-    s.house.moveV = 3;
+    s.house.moveV = 4;
   }
   // Level I is already passed: move an untouched Level I tracker to Level II.
   const c = s.career.cfa;
@@ -642,7 +649,10 @@ function movePlan(flatDrop = Number(state.house.move.flatDrop) || 0, houseDrop =
   return { sale: Math.round(sale), target, balance, guessed: !n('balance'), sellCost, equity, cwBal, cwGuessed: !c('balance'), cwEquity, cwRelease,
     deposit, sdlt, fees, needed, gap, months,
     perMonth: months ? Math.ceil(gap / months / 50) * 50 : null, loan, incomeNeeded: Math.round(loan / 4.5),
-    maxLoan: n('income') ? n('income') * 4.5 : null, ready: Math.max(0, Math.min(100, pct(equity + cwRelease + n('saved'), needed))) };
+    maxLoan: n('income') ? n('income') * 4.5 : null, maxLoan5: n('income') ? n('income') * 5 : null,
+    // Cash on hand after selling covers deposit + stamp duty + fees; the loan covers the rest.
+    maxPrice: n('income') ? (() => { const cash = Math.max(0, equity + cwRelease + n('saved')); let p = 300000;
+      while (p < 2000000 && (p + 5000) - n('income') * 4.5 + stampDuty(p + 5000) + fees <= cash) p += 5000; return p; })() : null, ready: Math.max(0, Math.min(100, pct(equity + cwRelease + n('saved'), needed))) };
 }
 function nextKidEvent() {
   const now = today();
@@ -1298,7 +1308,9 @@ const VIEWS = {
             <div class="stat"><span>모자란 돈</span><b class="${mp.gap ? 'neg' : 'pos'}">${money(mp.gap)}</b></div>
             ${mp.perMonth != null ? `<div class="stat"><span>목표일까지 매달 모아야 할 돈</span><b>${money(mp.perMonth)}${Number(M.monthly) ? ` <span class="small ${Number(M.monthly) >= mp.perMonth ? 'pos' : 'neg'}">(지금 ${money(M.monthly)})</span>` : ''}</b></div>` : ''}
             <div class="stat"><span>새 대출 ${money(mp.loan)} → 필요 연소득 (4.5배 기준)</span><b>${money(mp.incomeNeeded)}</b></div>
-            ${mp.maxLoan != null ? `<div class="stat small"><span>지금 소득으로 빌릴 수 있는 대략 한도</span><b class="${mp.maxLoan >= mp.loan ? 'pos' : 'neg'}">${money(mp.maxLoan)}</b></div>` : ''}
+            ${mp.maxLoan != null ? `<div class="stat small"><span>지금 소득으로 빌릴 수 있는 대략 한도 (4.5배 · 5배)</span><b class="${mp.maxLoan >= mp.loan ? 'pos' : 'neg'}">${money(mp.maxLoan)} · ${money(mp.maxLoan5)}</b></div>
+            <div class="stat small"><span>지금 현금 + 4.5배 대출로 살 수 있는 집</span><b class="${mp.maxPrice >= mp.target ? 'pos' : 'neg'}">약 ${money(mp.maxPrice)}</b></div>
+            ${mp.maxLoan < mp.loan ? `<div class="hint" style="margin:4px 0">지금 막히는 건 현금보다 <b>대출 한도</b>예요. 목표가 대출 ${money(mp.loan)}엔 가구 소득 약 ${money(mp.incomeNeeded)} (5배 상품이면 ${money(Math.round(mp.loan / 5))}) 필요 — 지금보다 ${money(mp.incomeNeeded - Number(M.income))} 더. Colliers Wood 대출도 한도에서 빠질 수 있어요. 커리어 탭 승진 · 이직이 곧 이사 계획이에요.</div>` : ''}` : ''}
           </div>
         </div>
         <div class="small" style="margin-top:10px"><b>집값 시나리오</b> <span class="muted">플랫을 시세보다 얼마나 싸게 파느냐 × 3-bed도 내렸느냐</span></div>
