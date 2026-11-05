@@ -281,25 +281,29 @@ const ISA_ALLOWANCE = 20000;
 const SCREEN_CHECKS = ['신분 · Right to Rent', '직장 · 소득', '이전 집주인 레퍼런스', '신용 체크', '대면 뷰잉 + 기존 테넌트 인사', '생활 패턴 (근무 · 흡연 · 손님)', '하우스 룰 동의'];
 const TENANT_CRITERIA = ['직장인 (소득 증빙 가능)', '비흡연', '조용한 생활 — 아이 있는 집 OK', '최소 6개월 계약', '손님 숙박은 미리 말하기', '공용공간 쓰고 바로 정리'];
 const CLEAN_FREQ = { '매주': 4.33, '격주': 2.17, '월 1회': 1 };
-// Moving plan: Surbiton 1-bed flat (bought £375k, near-full mortgage) → Surbiton 3-bed house within ~2 years.
+// Moving plan: live in the Surbiton 1-bed (wife's, bought £375k, near-full mortgage) → Surbiton 3-bed house in ~2 years.
+// The Colliers Wood 2-bed (mine, bought £375k) is the let with the tenants — kept by default.
 // Timed to finish before the Reception application (Jan 2029) so the new address counts for school places.
 const MOVE_MILESTONES = [
-  ['2026-11-30', '현재 모기지 확인 — 잔액 · 금리 · 고정 만료일 · 조기상환수수료(ERC) · 포팅 가능 여부', '모기지 앱/연간 명세서. 고정 만료일이 이사 시점을 거의 정해요 — ERC 피해서 팔거나, 새 집으로 포팅'],
-  ['2026-12-15', '플랫 현재 시세 확인 — 같은 단지 최근 실거래 + 에이전트 무료 밸류에이션 1~2곳', 'Rightmove "Sold prices" (Land Registry). 아래 계산기의 "현재 시세"를 고치세요'],
+  ['2026-11-30', 'Surbiton 플랫(와이프 명의) 모기지 확인 — 잔액 · 금리 · 고정 만료일 · ERC · 포팅 가능 여부', '고정 만료일이 이사 시점을 거의 정해요 — ERC 피해서 팔거나, 새 집으로 포팅'],
+  ['2026-11-30', 'Colliers Wood 플랫(내 명의) 모기지 확인 — 잔액 · 고정 만료일 · 세 놓는 것 허락(Consent to Let / BTL) 받았는지', '세 놓는 중인데 일반 주거용 모기지면 은행에 먼저 알려야 해요. 고정 만료일은 에퀴티 꺼낼 기회'],
+  ['2026-12-15', '두 플랫 시세 확인 — 같은 단지 최근 실거래 + 에이전트 무료 밸류에이션', 'Rightmove "Sold prices" (Land Registry). 아래 계산기 시세를 고치세요'],
   ['2027-01-31', '이사 자금 통장 분리 + 매달 자동이체', '계약금은 2년 안에 쓸 돈이라 주식 ISA와 따로. Cash ISA · Easy access saver'],
   ['2027-02-28', '3-bed 후보 구역 좁히기 — 학교 배정 거리 안에서', '육아 탭 "지난해 마지막 배정 거리" 자료와 겹쳐 보기. 집 위치 = 학교 배정'],
   ['2027-03-31', 'Surbiton 3-bed 실거래가 조사 → 목표가 업데이트', 'Terrace vs semi, 정원, 역까지 거리별로 가격대 메모'],
-  ['2027-06-30', '모기지 브로커 상담 1회 (무료 브로커 OK) — 차입 한도 · 필요한 계약금', '입사 1년 리뷰 직후. 연봉 오르면 다시 계산'],
-  ['2027-12-31', '중간 점검 — 계약금 목표 대비 진행률', '모자라면 목표가 · LTV · 이사 시점 중 하나 조정'],
-  ['2028-01-31', '테넌트 계약 만료일을 매도 시점에 맞추기', '팔 때는 빈 집(vacant possession)이 거래가 쉬워요. 새 계약은 이 날짜 넘기지 않게'],
-  ['2028-02-28', '플랫 판매 준비 — 수리 · 페인트 · 정리 · EPC 갱신 확인', ''],
-  ['2028-03-31', 'Mortgage in Principle (AIP) 받기 + 솔리시터 미리 정하기', '체인 지연이 제일 흔한 문제 — 서류(급여명세 3개월 · P60 · 은행 명세) 미리'],
-  ['2028-04-15', '플랫 내놓기 (봄 시장)', '보통 오퍼 → 완료까지 4~5개월. 리스홀드라 관리회사 서류(LPE1) 시간 걸림'],
-  ['2028-05-31', '매수 오퍼 수락된 뒤 3-bed 본격 뷰잉 · 오퍼', '내 집 팔린 상태(SSTC)면 셀러가 더 믿어줘요'],
+  ['2027-06-30', '모기지 브로커 상담 (부부 공동) — 차입 한도 · 계약금 · Colliers Wood를 어떻게 볼지', '입사 1년 리뷰 직후. Colliers Wood 대출·월세가 한도 계산에 들어가요'],
+  ['2027-09-30', 'Colliers Wood 결정 — 계속 세 놓기 / 리모기지로 에퀴티 꺼내기 / 팔기', '고정 만료일과 맞추기. 팔면 양도세(CGT) 신고 60일 안에'],
+  ['2027-12-31', '중간 점검 — 계약금 목표 대비 진행률', '모자라면 목표가 · LTV · 이사 시점 · Colliers Wood 활용 중 하나 조정'],
+  ['2028-02-28', 'Surbiton 플랫 판매 준비 — 수리 · 페인트 · 짐 줄이기 · EPC 확인', ''],
+  ['2028-03-31', 'Mortgage in Principle (AIP) + 솔리시터 — 인지세 할증 여부 확인', '부부는 한 단위라 Colliers Wood 때문에 5% 할증 대상이지만, Surbiton(주거용) 팔면서 사면 보통 면제 — 솔리시터에게 확인'],
+  ['2028-04-15', 'Surbiton 플랫 내놓기 (봄 시장)', '보통 오퍼 → 완료까지 4~5개월. 리스홀드라 관리회사 서류(LPE1) 시간 걸림'],
+  ['2028-05-31', '내 플랫 매도 확정(SSTC) 뒤 3-bed 본격 뷰잉 · 오퍼', '팔린 상태면 셀러가 더 믿어줘요'],
   ['2028-06-30', '서베이 (Level 2/3) + 오퍼 확정', '오래된 집은 Level 3 권장'],
-  ['2028-10-31', 'Exchange → Completion · 이사 🏡', '이사업체 · 주소 변경 (GP · 너서리 · 카운슬 택스 · 은행)'],
+  ['2028-10-31', 'Exchange → Completion · 이사 🏡 (Surbiton 매도와 같은 날 완료)', '같은 날 완료해야 인지세 할증 면제가 깔끔. 주소 변경: GP · 너서리 · 카운슬 택스 · 은행'],
   ['2028-12-31', '늦어도 이 날까지 새 집 주소로 — 1월 Reception 지원 전', '지원 마감일 주소 기준. 이사 늦어지면 육아 탭 학교 순위 다시 보기'],
 ];
+const OLD_MOVE_TITLES = ['현재 모기지 확인 — 잔액 · 금리 · 고정 만료일 · 조기상환수수료(ERC) · 포팅 가능 여부', '테넌트 계약 만료일을 매도 시점에 맞추기'];
+const CW_PLANS = ['계속 세 놓기', '리모기지로 에퀴티 꺼내기', '팔기'];
 // Stamp duty for a home mover (England, rates from April 2025; not first-time buyer relief).
 const SDLT_BANDS = [[125000, 0], [250000, 0.02], [925000, 0.05], [1500000, 0.10], [Infinity, 0.12]];
 function stampDuty(price) {
@@ -375,7 +379,9 @@ function defaultState() {
       steps: steps(TENANT_STEPS),
       candidates: [],
       // Numbers left blank are unknown — fill them in from the mortgage statement.
-      move: { bought: 375000, value: 375000, balance: '', rate: '', fixEnd: '', target: 700000, ltv: 90, saved: 0, monthly: 0, income: '', moveBy: '2028-10-31' },
+      // move.* = the Surbiton flat we live in (wife's, sold to move); move.cw = my Colliers Wood let.
+      move: { bought: 375000, value: 375000, balance: '', rate: '', fixEnd: '', target: 700000, ltv: 90, saved: 0, monthly: 0, income: '', moveBy: '2028-10-31',
+        cw: { bought: 375000, value: 375000, balance: '', fixEnd: '', plan: CW_PLANS[0], releaseLtv: 75 } },
       milestones: MOVE_MILESTONES.map(([date, title, note]) => ({ id: uid(), date, title, note, done: false })),
     },
   };
@@ -399,6 +405,11 @@ function migrate(s) {
   const st = s.house.steps;
   if (st.length === OLD_TENANT_STEPS.length && st.every((x, i) => x.title === OLD_TENANT_STEPS[i] && !x.done)) {
     s.house.steps = steps(TENANT_STEPS);
+  }
+  // Replace the first moving roadmap (written before the Colliers Wood let was known) if untouched.
+  const hm = s.house.milestones;
+  if (hm.length && hm.some(x => OLD_MOVE_TITLES.includes(x.title)) && hm.every(x => !x.done) && hm.every(x => MOVE_MILESTONES.some(m => m[0] === x.date) || OLD_MOVE_TITLES.includes(x.title))) {
+    s.house.milestones = MOVE_MILESTONES.map(([date, title, note]) => ({ id: uid(), date, title, note, done: false }));
   }
   // Level I is already passed: move an untouched Level I tracker to Level II.
   const c = s.career.cfa;
@@ -593,22 +604,28 @@ function houseStats() {
   const stepsDone = state.house.steps.filter(s => s.done).length;
   return { count: t.length, rentTotal, paid, nextDue, stepsDone, stepsTotal: state.house.steps.length };
 }
-// Cash needed to move: deposit + stamp duty + fees, minus equity released by selling the flat.
+// Cash needed to move: deposit + stamp duty + fees, minus equity from selling the Surbiton flat
+// and whatever the Colliers Wood plan releases (remortgage up to releaseLtv, or a sale).
 function movePlan() {
-  const M = state.house.move, n = k => Number(M[k]) || 0;
-  const balance = n('balance') || n('bought') * 0.95; // assume ~95% LTV until filled in
+  const M = state.house.move, C = M.cw, n = k => Number(M[k]) || 0, c = k => Number(C[k]) || 0;
+  const balance = n('balance') || n('bought') * 0.95;                  // assume ~95% LTV until filled in
   const sellCost = Math.round(n('value') * 0.018 + 1500);              // agent ~1.5% + VAT, legal
   const equity = Math.max(0, n('value') - balance - sellCost);
+  const cwBal = c('balance') || c('bought') * 0.9;
+  const cwEquity = Math.max(0, c('value') - cwBal);
+  const cwRelease = C.plan === '팔기' ? Math.max(0, cwEquity - Math.round(c('value') * 0.018 + 1500))
+    : C.plan === '리모기지로 에퀴티 꺼내기' ? Math.max(0, Math.round(c('value') * c('releaseLtv') / 100 - cwBal - 1500)) : 0;
   const deposit = Math.round(n('target') * (1 - n('ltv') / 100));
   const sdlt = stampDuty(n('target'));
   const fees = 5000;                                                    // legal, survey, broker, moving
   const needed = deposit + sdlt + fees;
-  const gap = Math.max(0, needed - equity - n('saved'));
+  const gap = Math.max(0, needed - equity - cwRelease - n('saved'));
   const months = M.moveBy ? Math.max(1, Math.round(daysUntil(M.moveBy) / 30.4)) : null;
   const loan = n('target') - deposit;
-  return { balance, guessed: !n('balance'), sellCost, equity, deposit, sdlt, fees, needed, gap, months,
+  return { balance, guessed: !n('balance'), sellCost, equity, cwBal, cwGuessed: !c('balance'), cwEquity, cwRelease,
+    deposit, sdlt, fees, needed, gap, months,
     perMonth: months ? Math.ceil(gap / months / 50) * 50 : null, loan, incomeNeeded: Math.round(loan / 4.5),
-    maxLoan: n('income') ? n('income') * 4.5 : null, ready: Math.min(100, pct(equity + n('saved'), needed)) };
+    maxLoan: n('income') ? n('income') * 4.5 : null, ready: Math.min(100, pct(equity + cwRelease + n('saved'), needed)) };
 }
 function nextKidEvent() {
   const now = today();
@@ -1208,23 +1225,34 @@ const VIEWS = {
     const vac = vacancy(), nextStep = H.steps.find(x => !x.done);
     const cl = H.cleaning, clMonth = cleaningMonthly();
     const M = H.move, mp = movePlan(), MS = 'house.milestones';
-    const num = (k, w = 90, attrs = '') => `<input type="number" min="0" style="width:${w}px" data-setting="house.move.${k}" value="${esc(M[k] || '')}" ${attrs}>`;
+    const num = (k, w = 90, attrs = '') => { const [o, f] = k.startsWith('cw.') ? [M.cw, k.slice(3)] : [M, k];
+      return `<input type="number" min="0" style="width:${w}px" data-setting="house.move.${k}" value="${esc(o[f] || '')}" ${attrs}>`; };
+    const cwFixLate = M.cw.fixEnd && M.cw.plan !== CW_PLANS[0] && M.cw.fixEnd > M.moveBy;
     const ms = [...H.milestones].sort((a, b) => a.done - b.done || a.date.localeCompare(b.date));
     const msDone = H.milestones.filter(x => x.done).length;
     const fixWarn = M.fixEnd && M.moveBy && M.fixEnd > M.moveBy;
     return `<div class="card" style="border-left:4px solid var(--house);margin-bottom:12px">
-        <div class="row" style="justify-content:space-between"><h3 style="margin:0">🏡 이사 계획 — Surbiton 1-bed 플랫 → 3-bed 하우스</h3>
+        <div class="row" style="justify-content:space-between"><h3 style="margin:0">🏡 이사 계획 — Surbiton 1-bed 플랫 → Surbiton 3-bed 하우스</h3>
           <span class="tag">${M.moveBy ? `${M.moveBy.slice(0, 7).replace('-', '.')} 목표 · ${mp.months}개월` : '목표일 미정'}</span></div>
         <div class="small muted">2년 안에 차근차근. 순서: 모기지 확인 → 자금 모으기 → 구역(학교) 정하기 → 플랫 매도 → 3-bed 매수 · 2029년 1월 Reception 지원 전에 새 주소로</div>
         <div class="grid" style="margin-top:10px">
           <div>
-            <div class="small"><b>지금 플랫</b></div>
+            <div class="small"><b>지금 사는 집 — Surbiton 1-bed (와이프 명의 · 팔고 이사)</b></div>
             <div class="row small" style="gap:6px 12px;margin-top:4px">
               <label class="row" style="gap:3px">산 가격 £${num('bought')}</label>
               <label class="row" style="gap:3px">현재 시세 £${num('value')}</label>
               <label class="row" style="gap:3px">대출 잔액 £${num('balance', 90, 'placeholder="모름"')}</label>
               <label class="row" style="gap:3px">금리 ${num('rate', 56, 'step="0.01" placeholder="%"')}%</label>
               <label class="row" style="gap:3px">고정 만료 <input type="date" data-setting="house.move.fixEnd" value="${esc(M.fixEnd)}"></label>
+            </div>
+            <div class="small" style="margin-top:10px"><b>세 놓는 집 — Colliers Wood 2-bed (내 명의)</b></div>
+            <div class="row small" style="gap:6px 12px;margin-top:4px">
+              <label class="row" style="gap:3px">산 가격 £${num('cw.bought')}</label>
+              <label class="row" style="gap:3px">현재 시세 £${num('cw.value')}</label>
+              <label class="row" style="gap:3px">대출 잔액 £${num('cw.balance', 90, 'placeholder="모름"')}</label>
+              <label class="row" style="gap:3px">고정 만료 <input type="date" data-setting="house.move.cw.fixEnd" value="${esc(M.cw.fixEnd)}"></label>
+              <select data-setting="house.move.cw.plan" style="width:auto">${options(CW_PLANS, M.cw.plan)}</select>
+              ${M.cw.plan === '리모기지로 에퀴티 꺼내기' ? `<label class="row" style="gap:3px">BTL LTV ${num('cw.releaseLtv', 56, 'max="85" step="5"')}%</label>` : ''}
             </div>
             <div class="small" style="margin-top:10px"><b>목표 3-bed</b></div>
             <div class="row small" style="gap:6px 12px;margin-top:4px">
@@ -1239,8 +1267,10 @@ const VIEWS = {
             </div>
           </div>
           <div>
-            <div class="stat"><span>플랫 팔면 남는 돈 (에퀴티)${mp.guessed ? ' <span class="tag late">잔액 95% 가정</span>' : ''}</span><b>${money(mp.equity)}</b></div>
+            <div class="stat"><span>Surbiton 팔면 남는 돈${mp.guessed ? ' <span class="tag late">잔액 95% 가정</span>' : ''}</span><b>${money(mp.equity)}</b></div>
             <div class="stat small muted"><span>잔액 ${money(Math.round(mp.balance))} · 매도 비용 약 ${money(mp.sellCost)}</span><b></b></div>
+            <div class="stat"><span>Colliers Wood에서 보태는 돈 (${esc(M.cw.plan)})${mp.cwGuessed ? ' <span class="tag late">잔액 90% 가정</span>' : ''}</span><b>${money(mp.cwRelease)}</b></div>
+            <div class="stat small muted"><span>Colliers Wood 에퀴티 ${money(Math.round(mp.cwEquity))} · 월세 ${money(hs.rentTotal)}/월${M.cw.plan === '팔기' ? ' → 끊김' : ' 유지'}</span><b></b></div>
             <div class="stat"><span>필요한 현금 (계약금 ${M.ltv ? 100 - M.ltv : 0}% + 인지세 + 비용)</span><b>${money(mp.needed)}</b></div>
             <div class="stat small muted"><span>계약금 ${money(mp.deposit)} · 인지세 ${money(mp.sdlt)} · 법무·서베이·이사 ${money(mp.fees)}</span><b></b></div>
             <div class="stat"><span>준비율</span><b>${Math.round(mp.ready)}%</b></div>
@@ -1252,10 +1282,12 @@ const VIEWS = {
           </div>
         </div>
         ${fixWarn ? `<div class="hint" style="color:var(--danger)">고정금리 만료(${esc(M.fixEnd)})가 이사 목표보다 늦어요 — 그 전에 팔면 ERC가 붙을 수 있어요. 포팅(새 집으로 대출 이전) 가능한지 확인하거나 이사 시점을 맞추세요.</div>` : ''}
-        <div class="hint">풀대출로 산 플랫이라 에퀴티는 작고, 계약금 대부분은 새로 모아야 해요. 그래서 핵심 숫자는 <b>"매달 모아야 할 돈"</b>이에요.
-          · 투자 탭 ISA(£${esc(state.invest.monthly)}/월, 주식)를 계약금으로 쓸 거면 이사 6~12개월 전부터 현금으로 옮기기 — 이사 직전 하락장에 팔지 않게.
-          · 테넌트 월세(지금 ${money(hs.rentTotal)}/월)는 이사하면 끊겨요. 플랫을 팔지 않고 세를 주려면 Consent to Let / BTL 리모기지 + 인지세 할증 5% 따로.
-          · 인지세는 2025년 4월 기준 (생애 첫 집 아님). 목표가 · 시세는 Rightmove 실거래로 업데이트하세요.</div>
+        ${cwFixLate ? `<div class="hint" style="color:var(--danger)">Colliers Wood 고정금리 만료(${esc(M.cw.fixEnd)})가 이사 목표보다 늦어요 — 그 전에 리모기지·매도하면 ERC가 붙을 수 있어요.</div>` : ''}
+        <div class="hint">두 플랫 다 풀대출이라 에퀴티가 작아서, 계약금 대부분은 새로 모아야 해요. 그래서 핵심 숫자는 <b>"매달 모아야 할 돈"</b>이에요.
+          · <b>인지세:</b> 부부는 한 단위로 봐서, Colliers Wood를 가진 채 사면 원래 5% 할증(£700k면 +£35k) 대상이에요. 하지만 Surbiton(지금 사는 집)을 같은 때 팔고 사면 "주거 대체"로 보통 면제돼요 — 위 계산은 면제 기준. Surbiton을 팔지 않고 세를 주면 할증이 붙어요. 솔리시터에게 꼭 확인.
+          · <b>Colliers Wood:</b> 계속 세 놓으면 월세는 유지되지만 모기지 한도 계산에 그 대출이 들어가요. 리모기지로 에퀴티를 꺼내면 BTL 금리 + 월세가 이자의 125~145%를 넘어야 해요. 팔면 양도세(CGT) 60일 안에 신고 · 납부.
+          · 투자 탭 ISA(£${esc(state.invest.monthly)}/월, 주식)를 계약금으로 쓸 거면 이사 6~12개월 전부터 현금으로 옮기기.
+          · 인지세는 2025년 4월 기준. 목표가 · 시세는 Rightmove 실거래로 업데이트하세요.</div>
         <details class="card" id="moveRoadmap" style="margin-top:10px" ${openDetails.has('moveRoadmap') ? 'open' : ''}><summary style="cursor:pointer"><b>이사 로드맵</b> <span class="small muted">${msDone} / ${H.milestones.length} 완료 · 2주 전부터 오늘 탭에 떠요</span></summary>
           <ul class="list">${ms.map(x => milestoneItem(x, false, 'house')).join('')}</ul>
           <form class="row" data-form="milestone" data-path="${MS}" style="margin-top:8px">
@@ -1264,18 +1296,18 @@ const VIEWS = {
         </details>
       </div>
       <div class="card" style="border-left:4px solid var(--house);margin-bottom:12px">
-        <div class="row" style="justify-content:space-between"><h3 style="margin:0">🚪 빈 방 채우기 — 서두르지 않고 좋은 사람으로</h3>
+        <div class="row" style="justify-content:space-between"><h3 style="margin:0">🚪 Colliers Wood 빈 방 채우기 — 서두르지 않고 좋은 사람으로</h3>
           <span class="small muted">후보 ${H.candidates.length}명${H.candidates.length ? ` · 심사 완료 ${H.candidates.filter(c => SCREEN_CHECKS.every((_, i) => c.checks?.[i])).length}명` : ''}</span></div>
         <div class="row small" style="margin-top:8px">
           <label class="row" style="gap:4px">비어 있던 달 <input type="month" data-setting="house.vacantSince" value="${esc(H.vacantSince)}"></label>
           <label class="row" style="gap:4px">목표 월세 £<input type="number" data-setting="house.targetRent" value="${esc(H.targetRent)}"></label>
         </div>
         ${vac ? `<div class="stat small muted" style="margin-top:8px"><span>비어 있던 기간 ${vac.months}개월 · 그동안 월세 기준</span><b>${money(vac.lost)}</b></div>` : ''}
-        <div class="small muted">Surbiton 일반 더블룸 시세 약 £800~850 (SpareRoom 매물 기준, 빌 별도) · 다음 단계: <b>${esc(nextStep?.title || '모두 완료')}</b></div>
+        <div class="small muted">Colliers Wood 더블룸 시세는 SpareRoom 매물로 확인 (빌 포함 여부 같이 비교) · 다음 단계: <b>${esc(nextStep?.title || '모두 완료')}</b></div>
       </div>
       <div class="grid">
       <div class="stack">
-        <div class="card"><h3>테넌트 · ${m} 월세</h3>
+        <div class="card"><h3>Colliers Wood 테넌트 · ${m} 월세</h3>
           <div class="scroll-x"><table class="table">
             <tr><th>이름</th><th>방</th><th>월세 (${CURRENCY})</th><th>입금일</th><th>계약 만료</th><th>입금</th><th></th></tr>
             ${state.house.tenants.map(t => {
