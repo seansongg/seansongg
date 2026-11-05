@@ -265,6 +265,7 @@ const KID_MILESTONES = [
 // School shortlist (state route) near home (KT5 8SF). Ratings differ between directories and
 // Ofsted no longer gives single-word grades for new inspections — check the latest report.
 const KID_SCHOOLS = [
+  ['Maple Infants\' School ⭐ 1지망', 'KT6 4AL (Maple Road, Surbiton 역 근처) · 공립 인펀트 (Reception~Y2) · 90명 정원에 약 288명 지원 (3.2:1)', 'Reception (2029.9)', '거리 기준 — 최근 마지막 배정 거리 약 0.63마일 (해마다 바뀜, 0.5마일 안이 안전)', '지금 집(KT5 8SF)에서 거리 재기 → 안이면 이사는 입학 뒤로 · 밖이면 2028년 말까지 거리 안으로', 'https://www.compare-school-performance.service.gov.uk/school/102577/maple-infants--school'],
   ['Christ Church CofE Primary', 'KT5 8LJ · 공립 CofE (Good) · 집과 같은 우편번호 구역', 'Reception (2029.9)', '거리 + 신앙 기준 — 일반(거리) 자리가 몇 개인지 확인', '배정 기준 · 지난해 마지막 거리 확인', ''],
   ['Grand Avenue Primary & Nursery', 'KT5 9HU · 공립 (Good, 2021) · 학생 약 670명, 너서리반 있음', '너서리반 (2028.9) → Reception', '거리 기준 · 큰 학교라 자리가 많은 편', '너서리반 무료 시간 · 지난해 마지막 거리 확인', 'https://reports.ofsted.gov.uk/provider/ELS/102580'],
   ['Knollmead Primary', 'KT5 9QP · 공립 아카데미 (일부 자료 Outstanding)', 'Reception (2029.9)', '아카데미 자체 배정 기준 확인', '최신 Ofsted · 거리 확인', ''],
@@ -285,6 +286,7 @@ const CLEAN_FREQ = { '매주': 4.33, '격주': 2.17, '월 1회': 1 };
 // The Colliers Wood 2-bed (mine, bought £375k) is the let with the tenants — kept by default.
 // Timed to finish before the Reception application (Jan 2029) so the new address counts for school places.
 const MOVE_MILESTONES = [
+  ['2026-11-30', 'Maple Infants\' 거리 확인 — 지금 집(KT5 8SF) → KT6 4AL', 'Kingston 카운슬 거리 계산 방식(직선)으로. 0.5마일 안이면 지금 집에서 지원하고 이사는 입학(2029.9) 뒤 · 밖이면 2028년 말까지 거리 안으로 (렌트 or 매수)'],
   ['2026-11-30', 'Surbiton 플랫(와이프 명의) 모기지 확인 — 잔액 · 금리 · 고정 만료일 · ERC · 포팅 가능 여부', '고정 만료일이 이사 시점을 거의 정해요 — ERC 피해서 팔거나, 새 집으로 포팅'],
   ['2026-11-30', 'Colliers Wood 플랫(내 명의) 모기지 확인 — 잔액 · 고정 만료일 · 세 놓는 것 허락(Consent to Let / BTL) 받았는지', '세 놓는 중인데 일반 주거용 모기지면 은행에 먼저 알려야 해요. 고정 만료일은 에퀴티 꺼낼 기회'],
   ['2026-12-15', '두 플랫 시세 확인 — 같은 단지 최근 실거래 + 에이전트 무료 밸류에이션', 'Rightmove "Sold prices" (Land Registry). 아래 계산기 시세를 고치세요'],
@@ -419,7 +421,7 @@ function migrate(s) {
   if (!Number(mv.cw.balance)) mv.cw.balance = 345000;
   if (!Number(mv.income)) mv.income = 100000;
   // Falling flat prices: list Surbiton earlier and add a plan B step to an existing roadmap (once).
-  if (!s.house.moveV || s.house.moveV < 4) {
+  if (!s.house.moveV || s.house.moveV < 5) {
     const L = s.house.milestones, find = t => L.find(x => x.title.startsWith(t));
     const list = find('Surbiton 플랫 내놓기'), prep = find('Surbiton 플랫 판매 준비');
     const nw = t => MOVE_MILESTONES.find(m => m[1].startsWith(t));
@@ -427,9 +429,14 @@ function migrate(s) {
       const [date, title, note] = nw(key);
       if (old && !old.done) Object.assign(old, { date, title, note });
     }
+    if (L.length && !find('Maple Infants')) { const [date, title, note] = nw('Maple Infants'); L.push({ id: uid(), date, title, note, done: false }); }
     if (L.length && !find('결정: 영국에서')) { const [date, title, note] = nw('결정: 영국에서'); L.push({ id: uid(), date, title, note, done: false }); }
     if (L.length && !find('플랜 B')) { const [date, title, note] = nw('플랜 B'); L.push({ id: uid(), date, title, note, done: false }); }
-    s.house.moveV = 4;
+    s.house.moveV = 5;
+    if (!s.kids.schools.some(x => x.name.startsWith('Maple'))) {
+      const [name, kind, entry, how, action, url] = KID_SCHOOLS[0];
+      s.kids.schools.unshift({ id: uid(), name, kind, entry, how, action, url, status: '조사' });
+    }
   }
   // Level I is already passed: move an untouched Level I tracker to Level II.
   const c = s.career.cfa;
