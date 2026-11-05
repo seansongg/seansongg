@@ -294,9 +294,10 @@ const MOVE_MILESTONES = [
   ['2027-06-30', '모기지 브로커 상담 (부부 공동) — 차입 한도 · 계약금 · Colliers Wood를 어떻게 볼지', '입사 1년 리뷰 직후. Colliers Wood 대출·월세가 한도 계산에 들어가요'],
   ['2027-09-30', 'Colliers Wood 결정 — 계속 세 놓기 / 리모기지로 에퀴티 꺼내기 / 팔기', '고정 만료일과 맞추기. 팔면 양도세(CGT) 신고 60일 안에'],
   ['2027-12-31', '중간 점검 — 계약금 목표 대비 진행률', '모자라면 목표가 · LTV · 이사 시점 · Colliers Wood 활용 중 하나 조정'],
-  ['2028-02-28', 'Surbiton 플랫 판매 준비 — 수리 · 페인트 · 짐 줄이기 · EPC 확인', ''],
+  ['2027-10-31', '플랜 B 정하기 — 플랫이 6개월 안 팔리거나 마이너스 에퀴티면?', '① 가격 더 내리고 현금 보태기 ② 이사 1년 미루고 대출 더 갚기 ③ Surbiton 세 놓고 사기 (Consent to Let · 인지세 할증 5% · 소득 심사 더 빡빡). 미리 정해 두면 급하게 손해 보고 안 팔아요'],
+  ['2028-01-15', 'Surbiton 플랫 판매 준비 — 수리 · 페인트 · 짐 줄이기 · EPC · 관리회사 서류(LPE1) 미리 요청', '플랫은 서류 · 서비스차지 때문에 매수자가 망설여요. 서비스차지 · 남은 리스 기간 · 큰 공사 예정을 먼저 정리해 두면 빨리 팔려요'],
   ['2028-03-31', 'Mortgage in Principle (AIP) + 솔리시터 — 인지세 할증 여부 확인', '부부는 한 단위라 Colliers Wood 때문에 5% 할증 대상이지만, Surbiton(주거용) 팔면서 사면 보통 면제 — 솔리시터에게 확인'],
-  ['2028-04-15', 'Surbiton 플랫 내놓기 (봄 시장)', '보통 오퍼 → 완료까지 4~5개월. 리스홀드라 관리회사 서류(LPE1) 시간 걸림'],
+  ['2028-02-15', 'Surbiton 플랫 내놓기 — 실거래 기준 현실 가격으로, 처음부터', '요즘 플랫은 할인해도 오래 걸려요. 높게 내놓고 내리면 더 늦어져요. 팔리기 + 완료까지 6~8개월 잡기'],
   ['2028-05-31', '내 플랫 매도 확정(SSTC) 뒤 3-bed 본격 뷰잉 · 오퍼', '팔린 상태면 셀러가 더 믿어줘요'],
   ['2028-06-30', '서베이 (Level 2/3) + 오퍼 확정', '오래된 집은 Level 3 권장'],
   ['2028-10-31', 'Exchange → Completion · 이사 🏡 (Surbiton 매도와 같은 날 완료)', '같은 날 완료해야 인지세 할증 면제가 깔끔. 주소 변경: GP · 너서리 · 카운슬 택스 · 은행'],
@@ -380,7 +381,7 @@ function defaultState() {
       candidates: [],
       // Numbers left blank are unknown — fill them in from the mortgage statement.
       // move.* = the Surbiton flat we live in (wife's, sold to move); move.cw = my Colliers Wood let.
-      move: { bought: 375000, value: 375000, balance: '', rate: '', fixEnd: '', target: 700000, ltv: 90, saved: 0, monthly: 0, income: '', moveBy: '2028-10-31',
+      move: { bought: 375000, value: 375000, balance: '', rate: '', fixEnd: '', target: 700000, ltv: 90, saved: 0, monthly: 0, income: '', moveBy: '2028-10-31', flatDrop: 5, houseDrop: 0,
         cw: { bought: 375000, value: 375000, balance: '', fixEnd: '', plan: CW_PLANS[0], releaseLtv: 75 } },
       milestones: MOVE_MILESTONES.map(([date, title, note]) => ({ id: uid(), date, title, note, done: false })),
     },
@@ -410,6 +411,18 @@ function migrate(s) {
   const hm = s.house.milestones;
   if (hm.length && hm.some(x => OLD_MOVE_TITLES.includes(x.title)) && hm.every(x => !x.done) && hm.every(x => MOVE_MILESTONES.some(m => m[0] === x.date) || OLD_MOVE_TITLES.includes(x.title))) {
     s.house.milestones = MOVE_MILESTONES.map(([date, title, note]) => ({ id: uid(), date, title, note, done: false }));
+  }
+  // Falling flat prices: list Surbiton earlier and add a plan B step to an existing roadmap (once).
+  if (!s.house.moveV || s.house.moveV < 3) {
+    const L = s.house.milestones, find = t => L.find(x => x.title.startsWith(t));
+    const list = find('Surbiton 플랫 내놓기'), prep = find('Surbiton 플랫 판매 준비');
+    const nw = t => MOVE_MILESTONES.find(m => m[1].startsWith(t));
+    for (const [old, key] of [[list, 'Surbiton 플랫 내놓기'], [prep, 'Surbiton 플랫 판매 준비']]) {
+      const [date, title, note] = nw(key);
+      if (old && !old.done) Object.assign(old, { date, title, note });
+    }
+    if (L.length && !find('플랜 B')) { const [date, title, note] = nw('플랜 B'); L.push({ id: uid(), date, title, note, done: false }); }
+    s.house.moveV = 3;
   }
   // Level I is already passed: move an untouched Level I tracker to Level II.
   const c = s.career.cfa;
@@ -606,26 +619,30 @@ function houseStats() {
 }
 // Cash needed to move: deposit + stamp duty + fees, minus equity from selling the Surbiton flat
 // and whatever the Colliers Wood plan releases (remortgage up to releaseLtv, or a sale).
-function movePlan() {
+// flatDrop / houseDrop: % below today's value the flats actually sell for / the house is bought for.
+// Equity can go negative: then selling needs cash just to clear the mortgage.
+function movePlan(flatDrop = Number(state.house.move.flatDrop) || 0, houseDrop = Number(state.house.move.houseDrop) || 0) {
   const M = state.house.move, C = M.cw, n = k => Number(M[k]) || 0, c = k => Number(C[k]) || 0;
+  const sale = n('value') * (1 - flatDrop / 100), cwSale = c('value') * (1 - flatDrop / 100);
+  const target = Math.round(n('target') * (1 - houseDrop / 100));
   const balance = n('balance') || n('bought') * 0.95;                  // assume ~95% LTV until filled in
-  const sellCost = Math.round(n('value') * 0.018 + 1500);              // agent ~1.5% + VAT, legal
-  const equity = Math.max(0, n('value') - balance - sellCost);
+  const sellCost = Math.round(sale * 0.018 + 1500);                    // agent ~1.5% + VAT, legal
+  const equity = Math.round(sale - balance - sellCost);
   const cwBal = c('balance') || c('bought') * 0.9;
-  const cwEquity = Math.max(0, c('value') - cwBal);
-  const cwRelease = C.plan === '팔기' ? Math.max(0, cwEquity - Math.round(c('value') * 0.018 + 1500))
-    : C.plan === '리모기지로 에퀴티 꺼내기' ? Math.max(0, Math.round(c('value') * c('releaseLtv') / 100 - cwBal - 1500)) : 0;
-  const deposit = Math.round(n('target') * (1 - n('ltv') / 100));
-  const sdlt = stampDuty(n('target'));
+  const cwEquity = Math.round(cwSale - cwBal);
+  const cwRelease = C.plan === '팔기' ? Math.round(cwEquity - cwSale * 0.018 - 1500)
+    : C.plan === '리모기지로 에퀴티 꺼내기' ? Math.max(0, Math.round(cwSale * c('releaseLtv') / 100 - cwBal - 1500)) : 0;
+  const deposit = Math.round(target * (1 - n('ltv') / 100));
+  const sdlt = stampDuty(target);
   const fees = 5000;                                                    // legal, survey, broker, moving
   const needed = deposit + sdlt + fees;
   const gap = Math.max(0, needed - equity - cwRelease - n('saved'));
   const months = M.moveBy ? Math.max(1, Math.round(daysUntil(M.moveBy) / 30.4)) : null;
-  const loan = n('target') - deposit;
-  return { balance, guessed: !n('balance'), sellCost, equity, cwBal, cwGuessed: !c('balance'), cwEquity, cwRelease,
+  const loan = target - deposit;
+  return { sale: Math.round(sale), target, balance, guessed: !n('balance'), sellCost, equity, cwBal, cwGuessed: !c('balance'), cwEquity, cwRelease,
     deposit, sdlt, fees, needed, gap, months,
     perMonth: months ? Math.ceil(gap / months / 50) * 50 : null, loan, incomeNeeded: Math.round(loan / 4.5),
-    maxLoan: n('income') ? n('income') * 4.5 : null, ready: Math.min(100, pct(equity + cwRelease + n('saved'), needed)) };
+    maxLoan: n('income') ? n('income') * 4.5 : null, ready: Math.max(0, Math.min(100, pct(equity + cwRelease + n('saved'), needed))) };
 }
 function nextKidEvent() {
   const now = today();
@@ -1257,6 +1274,8 @@ const VIEWS = {
             <div class="small" style="margin-top:10px"><b>목표 3-bed</b></div>
             <div class="row small" style="gap:6px 12px;margin-top:4px">
               <label class="row" style="gap:3px">목표가 £${num('target')}</label>
+              <label class="row" style="gap:3px">플랫 할인 매도 ${num('flatDrop', 56, 'max="40" step="1"')}%</label>
+              <label class="row" style="gap:3px">3-bed 가격 변화 −${num('houseDrop', 56, 'max="40" step="1"')}%</label>
               <label class="row" style="gap:3px">LTV ${num('ltv', 56, 'max="95" step="5"')}%</label>
               <label class="row" style="gap:3px">이사 목표 <input type="date" data-setting="house.move.moveBy" value="${esc(M.moveBy)}"></label>
             </div>
@@ -1267,12 +1286,13 @@ const VIEWS = {
             </div>
           </div>
           <div>
-            <div class="stat"><span>Surbiton 팔면 남는 돈${mp.guessed ? ' <span class="tag late">잔액 95% 가정</span>' : ''}</span><b>${money(mp.equity)}</b></div>
-            <div class="stat small muted"><span>잔액 ${money(Math.round(mp.balance))} · 매도 비용 약 ${money(mp.sellCost)}</span><b></b></div>
+            <div class="stat"><span>Surbiton 팔면 남는 돈${mp.guessed ? ' <span class="tag late">잔액 95% 가정</span>' : ''}</span><b class="${mp.equity < 0 ? 'neg' : ''}">${money(mp.equity)}</b></div>
+            <div class="stat small muted"><span>매도가 ${money(mp.sale)}${Number(M.flatDrop) ? ` (시세 −${esc(M.flatDrop)}%)` : ''} · 잔액 ${money(Math.round(mp.balance))} · 매도 비용 약 ${money(mp.sellCost)}</span><b></b></div>
             <div class="stat"><span>Colliers Wood에서 보태는 돈 (${esc(M.cw.plan)})${mp.cwGuessed ? ' <span class="tag late">잔액 90% 가정</span>' : ''}</span><b>${money(mp.cwRelease)}</b></div>
             <div class="stat small muted"><span>Colliers Wood 에퀴티 ${money(Math.round(mp.cwEquity))} · 월세 ${money(hs.rentTotal)}/월${M.cw.plan === '팔기' ? ' → 끊김' : ' 유지'}</span><b></b></div>
             <div class="stat"><span>필요한 현금 (계약금 ${M.ltv ? 100 - M.ltv : 0}% + 인지세 + 비용)</span><b>${money(mp.needed)}</b></div>
             <div class="stat small muted"><span>계약금 ${money(mp.deposit)} · 인지세 ${money(mp.sdlt)} · 법무·서베이·이사 ${money(mp.fees)}</span><b></b></div>
+            ${mp.equity < 0 ? `<div class="hint" style="color:var(--danger);margin:4px 0">마이너스 에퀴티 — 이 가격에 팔면 대출 갚는 데 현금 ${money(-mp.equity)}을 더 넣어야 해요.</div>` : ''}
             <div class="stat"><span>준비율</span><b>${Math.round(mp.ready)}%</b></div>
             ${bar(mp.ready, 'house')}
             <div class="stat"><span>모자란 돈</span><b class="${mp.gap ? 'neg' : 'pos'}">${money(mp.gap)}</b></div>
@@ -1281,6 +1301,16 @@ const VIEWS = {
             ${mp.maxLoan != null ? `<div class="stat small"><span>지금 소득으로 빌릴 수 있는 대략 한도</span><b class="${mp.maxLoan >= mp.loan ? 'pos' : 'neg'}">${money(mp.maxLoan)}</b></div>` : ''}
           </div>
         </div>
+        <div class="small" style="margin-top:10px"><b>집값 시나리오</b> <span class="muted">플랫을 시세보다 얼마나 싸게 파느냐 × 3-bed도 내렸느냐</span></div>
+        <div class="scroll-x"><table class="table" style="min-width:460px;margin-top:4px">
+          <tr><th>플랫 매도</th><th>Surbiton 남는 돈</th><th>3-bed 그대로 · 모자란 돈 / 월</th><th>3-bed −5% · 모자란 돈 / 월</th></tr>
+          ${[0, 5, 10, 15].map(d => { const a = movePlan(d, 0), b = movePlan(d, 5);
+            return `<tr${d === Number(M.flatDrop) ? ' style="font-weight:600"' : ''}><td>${d ? `−${d}%` : '시세대로'}</td>
+              <td class="${a.equity < 0 ? 'neg' : ''}">${money(a.equity)}</td>
+              <td>${money(a.gap)} / ${a.perMonth != null ? money(a.perMonth) : '—'}</td>
+              <td>${money(b.gap)} / ${b.perMonth != null ? money(b.perMonth) : '—'}</td></tr>`; }).join('')}
+        </table></div>
+        <div class="hint">하락장이면 사려는 3-bed도 같이 내려가니 <b>전체로 보면</b> 손해가 상쇄돼요 (£700k의 5% = £35k 싸짐). 하지만 그 £35k는 대부분 <b>대출이 줄어드는 것</b>이고, 지금 필요한 <b>현금</b>은 계약금·인지세만큼, 약 £5k만 줄어요. 반대로 플랫 할인은 고스란히 현금 부족이 돼요. 그래서 이 계획의 진짜 위험은 두 가지예요: <b>① 현금 부족</b> (그래서 매달 저축액이 핵심) <b>② 플랫이 안 팔려서 체인이 깨지는 것</b> → 로드맵에 일찍 내놓기 + 플랜 B 넣어 둠. 대출 잔액을 넣으면 (지금은 95% 가정) 숫자가 정확해져요.</div>
         ${fixWarn ? `<div class="hint" style="color:var(--danger)">고정금리 만료(${esc(M.fixEnd)})가 이사 목표보다 늦어요 — 그 전에 팔면 ERC가 붙을 수 있어요. 포팅(새 집으로 대출 이전) 가능한지 확인하거나 이사 시점을 맞추세요.</div>` : ''}
         ${cwFixLate ? `<div class="hint" style="color:var(--danger)">Colliers Wood 고정금리 만료(${esc(M.cw.fixEnd)})가 이사 목표보다 늦어요 — 그 전에 리모기지·매도하면 ERC가 붙을 수 있어요.</div>` : ''}
         <div class="hint">두 플랫 다 풀대출이라 에퀴티가 작아서, 계약금 대부분은 새로 모아야 해요. 그래서 핵심 숫자는 <b>"매달 모아야 할 돈"</b>이에요.
