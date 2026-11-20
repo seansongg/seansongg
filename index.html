@@ -352,6 +352,7 @@ function defaultState() {
       goals: CAREER_GOALS.map(([title, progress]) => ({ id: uid(), title, progress })),
       milestones: CAREER_MILESTONES.map(([date, title, note]) => ({ id: uid(), date, title, note, done: false })),
       wins: [],
+      visaDocs: [],
       cfa: { level: 'Level II', examDate: '2027-11-16', targetHours: 350, log: [],
         topics: CFA_TOPICS.map(([name, weight]) => ({ id: uid(), name, weight, progress: 0 })) },
     },
@@ -1054,6 +1055,7 @@ const VIEWS = {
           <div class="small muted">${esc(state.career.profile.company)} · ${esc(state.career.profile.since.replace('-', '.'))}~</div>
           <div class="small" style="margin-top:6px">3~5년 목표: 승진 + 포트폴리오 → 해외 퀀텀점프 (싱가포르 · 두바이 · 미국)</div>
         </div>
+        ${checklist('career.visaDocs', 'career', '🛂 비자 서류 · 동거 증거')}
         <div class="card"><h3>임팩트 로그 <span class="small muted">승진·이직 근거</span></h3>
           <form class="row" data-form="win">
             <input type="date" name="date" value="${now}" required>
